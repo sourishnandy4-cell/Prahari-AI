@@ -23,11 +23,18 @@ export default function SplashScreen({ onComplete }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Safety timer matching cinematic 0.72x video duration (11.0 seconds)
+  // Set optimal playback rate and crisp rendering
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.playbackRate = 1.0;
+    }
+  }, []);
+
+  // Safety timer matching video duration (approx. 9.5 seconds)
   useEffect(() => {
     const timer = setTimeout(() => {
       handleFinish();
-    }, 11400);
+    }, 9800);
 
     return () => clearTimeout(timer);
   }, []);
@@ -45,23 +52,27 @@ export default function SplashScreen({ onComplete }) {
         filter: 'blur(10px)',
         transition: { duration: 0.75, ease: [0.16, 1, 0.3, 1] },
       }}
-      transition={{ duration: 0.5, ease: 'easeOut' }}
+      transition={{ duration: 0.4, ease: 'easeOut' }}
     >
-      {/* ── Background Ambient Radial Lighting (Pure Camouflage Black) ── */}
+      {/* ── Background Deep Pitch-Black Radial Aura ── */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden bg-black">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-white/[0.02] rounded-full blur-[180px] pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] bg-cyan-950/20 rounded-full blur-[200px] pointer-events-none" />
       </div>
 
-      {/* ── Top Header Bar (Clean Minimal Logo) ── */}
+      {/* ── Top Header Bar ── */}
       <div className="w-full max-w-7xl flex items-center justify-between z-30 pointer-events-auto">
-        <div className="flex items-center gap-2.5 opacity-60 hover:opacity-100 transition-opacity text-[11px] font-mono tracking-widest text-zinc-400 uppercase">
-          <span className="w-2 h-2 rounded-full bg-white animate-pulse shadow-[0_0_8px_rgba(255,255,255,0.9)]" />
+        <div className="flex items-center gap-2.5 opacity-75 hover:opacity-100 transition-opacity text-[11px] font-mono tracking-widest text-zinc-300 uppercase">
+          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_10px_rgba(34,211,238,0.9)]" />
           <span>Prahari Sovereign Intelligence</span>
+        </div>
+
+        <div className="text-[10px] font-mono tracking-wider text-zinc-500 hover:text-zinc-300 transition-colors uppercase border border-zinc-800/80 px-2.5 py-1 rounded-full bg-zinc-900/60 backdrop-blur-sm">
+          Press [ESC] to Skip
         </div>
       </div>
 
-      {/* ── Fullscreen Video Presentation (Fits Entire Screen Edge-to-Edge) ── */}
-      <div className="absolute inset-0 w-full h-full flex items-center justify-center pointer-events-none overflow-hidden z-10">
+      {/* ── High-Fidelity Neural Video Presentation (Crisp, Native Aspect Ratio, Feathered Aura) ── */}
+      <div className="absolute inset-0 w-full h-full flex items-center justify-center pointer-events-none overflow-hidden z-10 p-4 sm:p-8">
         <video
           ref={videoRef}
           autoPlay
@@ -69,15 +80,28 @@ export default function SplashScreen({ onComplete }) {
           playsInline
           preload="auto"
           onEnded={handleFinish}
-          className="w-full h-full object-cover pointer-events-none mix-blend-screen transform-gpu"
+          className="w-full h-full max-w-5xl max-h-[85vh] object-contain pointer-events-none transform-gpu"
+          style={{
+            filter: 'contrast(1.18) brightness(1.06) saturate(1.15)',
+            maskImage: 'radial-gradient(circle at center, rgba(0,0,0,1) 68%, rgba(0,0,0,0) 98%)',
+            WebkitMaskImage: 'radial-gradient(circle at center, rgba(0,0,0,1) 68%, rgba(0,0,0,0) 98%)',
+            imageRendering: 'crisp-edges',
+            WebkitBackfaceVisibility: 'hidden',
+            transform: 'translateZ(0)',
+          }}
         >
-          <source src="/intro_video.mp4" type="video/mp4" />
+          {/* Prioritize high-bitrate WebM format for modern crisp rendering */}
           <source src="/intro_video.webm" type="video/webm" />
+          <source src="/intro_video.mp4" type="video/mp4" />
         </video>
       </div>
 
-      {/* ── Bottom Spacing ── */}
-      <div className="w-full max-w-7xl h-4 pointer-events-none z-30" />
+      {/* ── Bottom Ambient Indicator ── */}
+      <div className="w-full max-w-7xl flex items-center justify-center z-30 pointer-events-none">
+        <span className="text-[10px] font-mono text-zinc-600 tracking-widest uppercase">
+          AIR-GAPPED &bull; SOVEREIGN &bull; ON-PREMISE
+        </span>
+      </div>
     </motion.div>
   );
 }
