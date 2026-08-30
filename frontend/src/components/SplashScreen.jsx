@@ -60,8 +60,8 @@ export default function SplashScreen({ onComplete }) {
         </div>
       </div>
 
-      {/* ── Fullscreen Video Presentation (Fits Entire Screen Edge-to-Edge) ── */}
-      <div className="absolute inset-0 w-full h-full flex items-center justify-center pointer-events-none overflow-hidden z-10">
+      {/* ── Video Presentation (Scaled slightly so all text fits screen comfortably) ── */}
+      <div className="absolute inset-0 w-full h-full flex items-center justify-center pointer-events-none overflow-hidden z-10 p-3 sm:p-6">
         <video
           ref={videoRef}
           autoPlay
@@ -69,7 +69,7 @@ export default function SplashScreen({ onComplete }) {
           playsInline
           preload="auto"
           onEnded={handleFinish}
-          className="w-full h-full object-cover pointer-events-none mix-blend-screen transform-gpu"
+          className="w-full h-full max-w-[94vw] max-h-[88vh] object-contain pointer-events-none mix-blend-screen transform-gpu scale-[0.92]"
         >
           <source src="/intro_video.mp4" type="video/mp4" />
           <source src="/intro_video.webm" type="video/webm" />
