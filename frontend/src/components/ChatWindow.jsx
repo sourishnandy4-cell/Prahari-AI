@@ -27,30 +27,44 @@ const PROMPT_CARDS = [
   {
     icon: Flame,
     title: "Emergency Shutdown CDU",
-    desc: "What is the emergency shutdown procedure for the Crude Distillation Unit (CDU)?",
-    category: "Emergency Protocol",
+    desc: "What is the emergency shutdown procedure for the Crude Distillation Unit (CDU-3)?",
+    category: "Emergency SOP Directive",
     color: "text-rose-400 bg-rose-500/10 border-rose-500/20"
   },
   {
-    icon: ShieldAlert,
-    title: "H2S Gas Exposure Limits",
-    desc: "What are the permissible H2S gas exposure limits and PPE requirements in MRPL?",
-    category: "Toxic Gas Safety",
-    color: "text-amber-400 bg-amber-500/10 border-amber-500/20"
-  },
-  {
     icon: Wrench,
-    title: "PSV Relief Valve Testing",
-    desc: "How often must high-pressure safety relief valves (PSVs) be inspected and recertified?",
-    category: "Mechanical Compliance",
+    title: "Asset History: PRV-401",
+    desc: "Pull the maintenance history, pop-test tolerances, and recertification records for PRV-401.",
+    category: "Asset Integrity Registry",
     color: "text-cyan-400 bg-cyan-500/10 border-cyan-500/20"
   },
   {
     icon: FileCheck,
-    title: "Zone-1 Hot Work Permit",
-    desc: "What safety steps and continuous LEL gas tests are required for a Zone-1 hot-work permit?",
-    category: "Operations Permit",
+    title: "P&ID Schematic Tracing",
+    desc: "Analyze the CDU-3 P&ID schematic for block isolation valves EBV-101/102 and flare bypasses.",
+    category: "Multimodal P&ID Vision",
     color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
+  },
+  {
+    icon: ShieldAlert,
+    title: "Material Code Harmonization",
+    desc: "Check if vendor submitted ASTM A105 flange meets MRPL PMS-300-SS sour service standards.",
+    category: "MOP&NG Standards Agent",
+    color: "text-purple-400 bg-purple-500/10 border-purple-500/20"
+  },
+  {
+    icon: ShieldAlert,
+    title: "Near-Miss Precursor NLP",
+    desc: "Screen recent field unsafe-act logs to flag high-consequence injury and fatality precursors.",
+    category: "NLP Precursor Detection",
+    color: "text-amber-400 bg-amber-500/10 border-amber-500/20"
+  },
+  {
+    icon: FileCheck,
+    title: "H2S Exposure Limits & PPE",
+    desc: "What are the permissible H2S gas exposure limits and mandatory SCBA protocols in Sector-2?",
+    category: "Toxic Gas Safety",
+    color: "text-sky-400 bg-sky-500/10 border-sky-500/20"
   }
 ];
 
