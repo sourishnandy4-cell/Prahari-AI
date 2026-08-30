@@ -113,6 +113,16 @@ def add_message(
     mid = str(uuid.uuid4())
     now = _now()
     with _get_conn() as conn:
+        # If user message and session has default title, auto-title it from prompt
+        if role == "user":
+            row = conn.execute("SELECT title FROM sessions WHERE id=?", (session_id,)).fetchone()
+            if row:
+                t = row["title"]
+                if not t or t in ("New Session", "New chat", "Safety Protocol Question") or t.startswith("Session "):
+                    auto_t = content.strip().replace("\n", " ")[:45]
+                    if auto_t:
+                        conn.execute("UPDATE sessions SET title=? WHERE id=?", (auto_t, session_id))
+
         conn.execute(
             """INSERT INTO messages(id, session_id, role, content, citations, metadata, created_at)
                VALUES (?,?,?,?,?,?,?)""",

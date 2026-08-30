@@ -91,10 +91,7 @@ export default function Sidebar({
   };
 
   const formatSessionTitle = (title) => {
-    if (!title || title === 'New chat' || title === 'New Session') return 'Safety Protocol Question';
-    if (title.startsWith('Session ') && title.includes('/')) {
-      return 'Refinery Safety Protocol';
-    }
+    if (!title || title === 'New chat' || title === 'New Session') return 'New chat';
     return title;
   };
 
