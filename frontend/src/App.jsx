@@ -8,10 +8,15 @@ import GetStartedScreen from './components/GetStartedScreen';
 import { useIsMobile } from './hooks/useMediaQuery';
 import { useSwipeGesture } from './hooks/useSwipeGesture';
 
-// ── API base URL: supports LAN mode for Android APK (set VITE_API_BASE_URL in .env.mobile)
-const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+// ── API base URL: auto-detects Electron file:// protocol, mobile LAN, and web proxy
+const API_BASE = (
+  import.meta.env.VITE_API_BASE_URL ||
+  (typeof window !== 'undefined' && (window.location.protocol === 'file:' || !window.location.host)
+    ? 'http://127.0.0.1:8000'
+    : '')
+).replace(/\/$/, '');
 
-/** Build API url: works both in web proxy mode and absolute LAN mode */
+/** Build API url: works seamlessly across Electron (file://), mobile APK, and Vite proxy */
 function apiUrl(path) {
   return `${API_BASE}${path}`;
 }

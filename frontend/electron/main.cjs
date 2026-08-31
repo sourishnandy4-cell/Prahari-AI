@@ -81,39 +81,63 @@ function waitForBackend() {
 }
 
 // ── Start bundled FastAPI backend ─────────────────────────────────────────────
-function startBackend() {
-  const isDev = !app.isPackaged;
-
-  // In dev mode: try running python directly
-  // In production: run the bundled aegis_backend.exe
-  let backendExecutable, args;
-
-  if (isDev) {
-    // Development: use the venv python
-    const projectRoot = path.resolve(__dirname, '../..');
-    const pythonExe = path.join(projectRoot, 'venv', 'Scripts', 'python.exe');
-    backendExecutable = pythonExe;
-    args = ['-m', 'uvicorn', 'backend.app.main:app', '--host', '127.0.0.1', '--port', String(BACKEND_PORT)];
-    process.env.PYTHONPATH = projectRoot;
-    console.log(`[Aegis Desktop] Dev mode: launching Python backend from ${projectRoot}`);
-  } else {
-    // Production: use the bundled .exe
-    backendExecutable = path.join(process.resourcesPath, 'backend', 'aegis_backend.exe');
-    args = [];
-    console.log(`[Aegis Desktop] Production mode: launching backend exe from ${backendExecutable}`);
+async function startBackend() {
+  // Check if backend is already active on port 8000
+  const alreadyRunning = await checkBackendHealth();
+  if (alreadyRunning) {
+    console.log('[Aegis Desktop] FastAPI backend is already running on port 8000.');
+    return;
   }
 
-  if (!fs.existsSync(backendExecutable)) {
-    console.warn(`[Aegis Desktop] Backend executable not found: ${backendExecutable}`);
-    return;
+  const isDev = !app.isPackaged;
+  const projectRoot = path.resolve(__dirname, '../..');
+
+  // Candidate executable paths in priority order
+  const candidates = [
+    // 1. Packaged folder PyInstaller output in resources
+    path.join(process.resourcesPath, 'backend', 'aegis_backend', 'aegis_backend.exe'),
+    path.join(process.resourcesPath, 'backend', 'aegis_backend.exe'),
+    path.join(process.resourcesPath, 'aegis_backend', 'aegis_backend.exe'),
+    // 2. Local dist PyInstaller build
+    path.join(projectRoot, 'dist', 'aegis_backend', 'aegis_backend.exe'),
+    // 3. Project virtual environment Python
+    path.join(projectRoot, 'venv', 'Scripts', 'python.exe'),
+  ];
+
+  let backendExecutable = null;
+  let args = [];
+  let workingDir = projectRoot;
+
+  for (const p of candidates) {
+    if (fs.existsSync(p)) {
+      backendExecutable = p;
+      if (p.endsWith('python.exe')) {
+        args = ['-m', 'uvicorn', 'backend.app.main:app', '--host', '127.0.0.1', '--port', String(BACKEND_PORT)];
+        process.env.PYTHONPATH = projectRoot;
+      } else {
+        args = [];
+        workingDir = path.dirname(p);
+      }
+      break;
+    }
+  }
+
+  if (!backendExecutable) {
+    // 4. System Python fallback
+    backendExecutable = 'python';
+    args = ['-m', 'uvicorn', 'backend.app.main:app', '--host', '127.0.0.1', '--port', String(BACKEND_PORT)];
+    process.env.PYTHONPATH = projectRoot;
+    console.log('[Aegis Desktop] Using system Python fallback to launch backend.');
+  } else {
+    console.log(`[Aegis Desktop] Launching backend from: ${backendExecutable}`);
   }
 
   try {
     backendProcess = spawn(backendExecutable, args, {
-      cwd: isDev ? path.resolve(__dirname, '../..') : process.resourcesPath,
+      cwd: workingDir,
       detached: false,
       stdio: 'pipe',
-      windowsHide: true,  // hide the console window on Windows
+      windowsHide: true,
     });
 
     backendProcess.stdout?.on('data', (d) => {
@@ -133,7 +157,6 @@ function startBackend() {
     backendProcess.on('exit', (code) => {
       console.log(`[Aegis Desktop] Backend exited with code ${code}`);
       if (!isQuitting && mainWindow) {
-        // Backend crashed — show notification in window
         mainWindow.webContents.executeJavaScript(
           `window.__AEGIS_BACKEND_DIED = true; console.warn('Backend process exited unexpectedly');`
         ).catch(() => {});
@@ -150,7 +173,7 @@ function startBackend() {
 function createSplashWindow() {
   splashWindow = new BrowserWindow({
     width: 480,
-    height: 340,
+    height: 330,
     frame: false,
     transparent: false,
     resizable: false,
@@ -371,7 +394,7 @@ function buildAppMenu() {
             type: 'info',
             title: 'About PRAHARI AI',
             message: 'PRAHARI AI — Sovereign Industrial Safety Intelligence',
-            detail: 'Version 2.1.0\nBuilt for MRPL Refinery\n\n100% Offline / Air-Gapped\nPowered by Llama 3.2 + ChromaDB + BM25',
+            detail: 'Version 2.3.0\nBuilt for MRPL Refinery\n\n100% Offline / Air-Gapped\nPowered by Llama 3.2 + ChromaDB + BM25',
             buttons: ['OK'],
           }),
         },
@@ -391,7 +414,7 @@ ipcMain.handle('check-backend-health', () => checkBackendHealth());
 app.whenReady().then(async () => {
   buildAppMenu();
   createSplashWindow();
-  startBackend();
+  await startBackend();
 
   console.log('[Aegis Desktop] Waiting for backend to be ready...');
   const backendReady = await waitForBackend();

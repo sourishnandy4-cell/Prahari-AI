@@ -1,7 +1,7 @@
 {
   "name": "aegis-ai-frontend",
   "private": true,
-  "version": "2.2.0",
+  "version": "2.3.0",
   "type": "module",
   "description": "PRAHARI AI — Sovereign Industrial Safety Intelligence for MRPL",
   "author": "Aegis AI Team",
@@ -62,12 +62,26 @@
     ],
     "extraResources": [
       {
+        "from": "../dist/aegis_backend",
+        "to": "backend/aegis_backend",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
         "from": "../backend",
         "to": "backend",
         "filter": [
           "**/*",
           "!**/__pycache__/**",
           "!**/*.pyc"
+        ]
+      },
+      {
+        "from": "../data",
+        "to": "data",
+        "filter": [
+          "**/*"
         ]
       }
     ],
