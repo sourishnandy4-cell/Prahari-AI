@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import MessageItem from './MessageItem';
 import LottieLoader from './LottieLoader';
+import NeuralBrainHero3D from './NeuralBrainHero3D';
 
 const PROMPT_CARDS = [
   {
@@ -306,22 +307,20 @@ export default function ChatWindow({
       {/* Message Feed / Main Chat Area */}
       <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6 z-10">
         {messages.length === 0 ? (
-          /* Empty / Welcome State (ChatGPT & Gemini Hero with Brain Logo) */
-          <div className="h-full flex flex-col items-center justify-center text-center max-w-2xl mx-auto px-2 select-text">
+          /* Empty / Welcome State with 3D Neural Human Brain Hero */
+          <div className="min-h-full flex flex-col items-center justify-center text-center max-w-2xl mx-auto px-2 select-text py-2 sm:py-4">
             
-            {/* Glowing Brain Hero Logo */}
-            <div className="relative mb-5 group">
-              <div className="absolute -inset-3 bg-gradient-to-r from-cyan-500/25 via-sky-500/20 to-indigo-500/25 rounded-full blur-xl opacity-80 group-hover:opacity-100 transition duration-700 animate-pulse" />
-              <div className="relative w-16 h-16 rounded-2xl bg-zinc-900 border border-cyan-500/40 flex items-center justify-center text-cyan-400 shadow-2xl shadow-cyan-950/40">
-                <Brain className="w-9 h-9 text-cyan-400" />
-              </div>
+            {/* 3D Anatomical Human Brain Hero (8,500 particles, gyri/sulci folding, synaptic firings & mouse parallax) */}
+            <div className="relative w-full h-44 sm:h-52 md:h-56 mb-2 flex items-center justify-center pointer-events-auto">
+              <div className="absolute inset-0 bg-gradient-to-t from-cyan-500/10 via-transparent to-transparent rounded-full blur-2xl pointer-events-none" />
+              <NeuralBrainHero3D phase={0} className="w-full h-full" />
             </div>
 
             {/* Title & Subtitle */}
-            <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight mb-2 font-sans">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-tight mb-1.5 font-sans">
               How can Prahari AI assist you today?
             </h2>
-            <p className="text-zinc-400 text-xs sm:text-sm leading-relaxed mb-8 max-w-lg font-normal">
+            <p className="text-zinc-400 text-xs sm:text-sm leading-relaxed mb-6 max-w-lg font-normal">
               Ask technical safety queries, audit emergency SOPs, or attach pictures, diagrams, and compliance documents for sovereign offline analysis.
             </p>
 

@@ -32,6 +32,15 @@ export default function SplashScreen({ onComplete }) {
     return () => clearTimeout(timer);
   }, []);
 
+  // Programmatic video play with error recovery
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.play().catch((err) => {
+        console.log('[SplashScreen] Video autoplay notice:', err);
+      });
+    }
+  }, []);
+
   return (
     <motion.div
       key="splash-screen"
@@ -58,6 +67,17 @@ export default function SplashScreen({ onComplete }) {
           <span className="w-2 h-2 rounded-full bg-white animate-pulse shadow-[0_0_8px_rgba(255,255,255,0.9)]" />
           <span>Prahari Sovereign Intelligence</span>
         </div>
+
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleFinish();
+          }}
+          className="px-3 py-1 rounded-full bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-800 text-[11px] font-mono text-zinc-400 hover:text-white transition-all cursor-pointer shadow-sm"
+        >
+          Skip Intro &rarr;
+        </button>
       </div>
 
       {/* ── Fullscreen High-Definition 1080p Video Presentation ── */}
@@ -81,8 +101,10 @@ export default function SplashScreen({ onComplete }) {
         </video>
       </div>
 
-      {/* ── Bottom Spacing ── */}
-      <div className="w-full max-w-7xl h-4 pointer-events-none z-30" />
+      {/* ── Bottom Subtitle / Prompt ── */}
+      <div className="w-full max-w-7xl flex items-center justify-center text-[10px] font-mono text-zinc-600 tracking-wider z-30 pointer-events-none uppercase">
+        <span>Press Space / Enter or click anywhere to continue</span>
+      </div>
     </motion.div>
   );
 }

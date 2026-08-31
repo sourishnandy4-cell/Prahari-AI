@@ -7,7 +7,7 @@ export default defineConfig(({ mode }) => ({
     react()
   ],
   envPrefix: 'VITE_',
-  base: mode === 'mobile' ? './' : '/',   // relative paths required for Capacitor
+  base: './',   // relative paths required for Electron (file://) and Capacitor
   build: {
     outDir: 'dist',
     assetsDir: 'assets',

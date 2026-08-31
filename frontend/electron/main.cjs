@@ -164,8 +164,20 @@ function createSplashWindow() {
   splashWindow.once('ready-to-show', () => splashWindow.show());
 }
 
+// ── Check Vite dev server ───────────────────────────────────────────────────
+function checkViteDevServer() {
+  return new Promise((resolve) => {
+    const devUrl = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173';
+    const req = http.get(devUrl, { timeout: 1200 }, (res) => {
+      resolve(res.statusCode < 500);
+    });
+    req.on('error', () => resolve(false));
+    req.on('timeout', () => { req.destroy(); resolve(false); });
+  });
+}
+
 // ── Main app window ───────────────────────────────────────────────────────────
-function createMainWindow() {
+async function createMainWindow() {
   const state = loadWindowState();
 
   mainWindow = new BrowserWindow({
@@ -188,12 +200,30 @@ function createMainWindow() {
     },
   });
 
-  // Load the app
-  const startUrl = app.isPackaged
-    ? `file://${path.join(__dirname, '../dist/index.html')}`
-    : (process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173');
+  // Load the app: check if dev server is running, otherwise fallback to local dist/index.html
+  const distIndexPath = path.join(__dirname, '../dist/index.html');
+  const hasDevServer = !app.isPackaged && (await checkViteDevServer());
 
-  mainWindow.loadURL(startUrl);
+  if (hasDevServer) {
+    const devUrl = process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173';
+    console.log(`[Aegis Desktop] Connecting to Vite dev server: ${devUrl}`);
+    mainWindow.loadURL(devUrl);
+  } else if (fs.existsSync(distIndexPath)) {
+    console.log(`[Aegis Desktop] Loading local dist bundle: ${distIndexPath}`);
+    mainWindow.loadFile(distIndexPath);
+  } else {
+    console.warn(`[Aegis Desktop] Neither dev server nor dist/index.html found. Trying default URL.`);
+    mainWindow.loadURL('http://localhost:5173');
+  }
+
+  // Graceful fallback if URL fails to load
+  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
+    console.warn(`[Aegis Desktop] did-fail-load: ${validatedURL} -> ${errorDescription} (${errorCode})`);
+    if (validatedURL.startsWith('http') && fs.existsSync(distIndexPath)) {
+      console.log(`[Aegis Desktop] Switching to local dist bundle on failure.`);
+      mainWindow.loadFile(distIndexPath);
+    }
+  });
 
   // Once loaded, show window and close splash
   mainWindow.once('ready-to-show', () => {
@@ -372,11 +402,11 @@ app.whenReady().then(async () => {
     console.warn('[Aegis Desktop] Backend did not respond in time — opening window anyway.');
   }
 
-  createMainWindow();
+  await createMainWindow();
   createTray();
 
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createMainWindow();
+  app.on('activate', async () => {
+    if (BrowserWindow.getAllWindows().length === 0) await createMainWindow();
     else { mainWindow?.show(); mainWindow?.focus(); }
   });
 });

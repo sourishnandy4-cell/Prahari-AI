@@ -14,6 +14,14 @@ echo  ║            Desktop Application Launcher v2.1              ║
 echo  ╚══════════════════════════════════════════════════════════╝
 echo.
 
+REM ── Check and build frontend if needed ────────────────────────────────────
+if not exist "frontend\dist\index.html" (
+    echo [Build] Building optimized frontend bundle for desktop...
+    cd frontend
+    call npm run build
+    cd ..
+)
+
 REM ── Start FastAPI backend (background) ────────────────────────────────────
 echo [1/2] Starting FastAPI Sovereign Backend on port 8000...
 start /B "" venv\Scripts\python.exe -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
@@ -33,4 +41,4 @@ echo [Done] PRAHARI AI closed. Shutting down backend...
 taskkill /f /im python.exe 2>nul
 taskkill /f /im uvicorn.exe 2>nul
 echo [Done] All processes stopped.
-pause
+
