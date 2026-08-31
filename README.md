@@ -1,7 +1,23 @@
 # 🛡️ PRAHARI AI (Aegis Sovereign Intelligence)
 
+[![Release](https://img.shields.io/github/v/release/sourishnandy4-cell/Aegis-AI?color=blue&label=Latest%20Release)](https://github.com/sourishnandy4-cell/Aegis-AI/releases/latest)
+[![Android](https://img.shields.io/badge/Platform-Android%20%7C%20Windows-brightgreen)](https://github.com/sourishnandy4-cell/Aegis-AI/releases/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 > **Sovereign On-Premise Industrial Safety & Agentic RAG Web Application**
 > *Engineered for High-Reliability Operations at Mangalore Refinery and Petrochemicals Limited (MRPL).*
+
+---
+
+## 📦 Downloads & Releases (v2.1.0)
+
+| Platform | Package | Size | Direct Download |
+| :--- | :--- | :--- | :--- |
+| 📱 **Android Mobile** | `PRAHARI-AI-v2.1.0.apk` | 68.6 MB | [📥 Download APK](https://github.com/sourishnandy4-cell/Aegis-AI/releases/download/v2.1.0/PRAHARI-AI-v2.1.0.apk) |
+| 🖥️ **Windows (Installer)** | `PRAHARI-AI-Setup-v2.1.0.exe` | 252.9 MB | [📥 Download Setup](https://github.com/sourishnandy4-cell/Aegis-AI/releases/download/v2.1.0/PRAHARI-AI-Setup-v2.1.0.exe) |
+| ⚡ **Windows (Portable)** | `PRAHARI-AI-Portable-v2.1.0.exe` | 252.4 MB | [📥 Download Portable](https://github.com/sourishnandy4-cell/Aegis-AI/releases/download/v2.1.0/PRAHARI-AI-Portable-v2.1.0.exe) |
+
+*Full release notes and checksums are available on the [GitHub Releases Page](https://github.com/sourishnandy4-cell/Aegis-AI/releases/tag/v2.1.0).*
 
 ---
 
