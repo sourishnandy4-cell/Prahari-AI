@@ -5,7 +5,7 @@ from typing import Optional
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Aegis AI Sovereign Backend"
-    VERSION: str = "2.3.0"
+    VERSION: str = "2.4.0"
 
     # Ollama Local LLM & Embeddings
     OLLAMA_BASE_URL: str = "http://localhost:11434"

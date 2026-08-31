@@ -9,15 +9,15 @@
 
 ---
 
-## 📦 Downloads & Releases (v2.3.0)
+## 📦 Downloads & Releases (v2.4.0)
 
 | Platform | Package | Size | Direct Download |
 | :--- | :--- | :--- | :--- |
-| 📱 **Android Mobile** | `PRAHARI-AI-v2.3.0.apk` | 70.2 MB | [📥 Download APK](https://github.com/sourishnandy4-cell/Aegis-AI/releases/download/v2.3.0/PRAHARI-AI-v2.3.0.apk) |
-| 🖥️ **Windows (Installer)** | `PRAHARI-AI-Setup-v2.3.0.exe` | 327.1 MB | [📥 Download Setup](https://github.com/sourishnandy4-cell/Aegis-AI/releases/download/v2.3.0/PRAHARI-AI-Setup-v2.3.0.exe) |
-| ⚡ **Windows (Portable)** | `PRAHARI-AI-Portable-v2.3.0.exe` | 326.6 MB | [📥 Download Portable](https://github.com/sourishnandy4-cell/Aegis-AI/releases/download/v2.3.0/PRAHARI-AI-Portable-v2.3.0.exe) |
+| 📱 **Android Mobile** | `PRAHARI-AI-v2.4.0.apk` | 70.2 MB | [📥 Download APK](https://github.com/sourishnandy4-cell/Aegis-AI/releases/download/v2.4.0/PRAHARI-AI-v2.4.0.apk) |
+| 🖥️ **Windows (Installer)** | `PRAHARI-AI-Setup-v2.4.0.exe` | 327.1 MB | [📥 Download Setup](https://github.com/sourishnandy4-cell/Aegis-AI/releases/download/v2.4.0/PRAHARI-AI-Setup-v2.4.0.exe) |
+| ⚡ **Windows (Portable)** | `PRAHARI-AI-Portable-v2.4.0.exe` | 326.6 MB | [📥 Download Portable](https://github.com/sourishnandy4-cell/Aegis-AI/releases/download/v2.4.0/PRAHARI-AI-Portable-v2.4.0.exe) |
 
-*Full release notes and checksums are available on the [GitHub Releases Page](https://github.com/sourishnandy4-cell/Aegis-AI/releases/tag/v2.3.0).*
+*Full release notes and checksums are available on the [GitHub Releases Page](https://github.com/sourishnandy4-cell/Aegis-AI/releases/tag/v2.4.0).*
 
 ---
 
