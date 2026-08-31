@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UploadCloud, FileCheck, X, Loader2, AlertCircle, Database } from 'lucide-react';
 
-export default function FileUploadModal({ isOpen, onClose, onIngestSuccess, indexedFiles }) {
+export default function FileUploadModal({ isOpen, onClose, onIngestSuccess, indexedFiles, apiUrl }) {
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -34,7 +34,8 @@ export default function FileUploadModal({ isOpen, onClose, onIngestSuccess, inde
 
     try {
       setUploadProgress('Extracting text from PDF...');
-      const response = await fetch('/api/upload', { method: 'POST', body: formData });
+      const targetUrl = apiUrl ? apiUrl('/api/upload') : '/api/upload';
+      const response = await fetch(targetUrl, { method: 'POST', body: formData });
       const data = await response.json();
 
       if (response.ok && data.status === 'success') {
@@ -46,7 +47,7 @@ export default function FileUploadModal({ isOpen, onClose, onIngestSuccess, inde
         setUploadProgress('');
       }
     } catch (err) {
-      setErrorMsg('Network error. Verify local FastAPI backend is online (http://localhost:8000).');
+      setErrorMsg('Network error. Verify local FastAPI backend is online.');
       setUploadProgress('');
     } finally {
       setUploading(false);

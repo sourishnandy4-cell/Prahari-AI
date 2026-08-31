@@ -1,0 +1,409 @@
+/**
+ * PRAHARI AI — Electron Main Process
+ * Full-featured desktop shell with:
+ * - Auto-launch of bundled FastAPI backend (aegis_backend.exe)
+ * - Backend health polling with animated splash screen while waiting
+ * - Native application menu (File, View, Help)
+ * - System tray icon with show/hide/quit actions
+ * - Window state persistence (size, position)
+ * - Graceful backend process kill on quit
+ */
+
+const { app, BrowserWindow, ipcMain, Menu, Tray, nativeImage, shell, dialog } = require('electron');
+const path = require('path');
+const { spawn } = require('child_process');
+const http = require('http');
+const fs = require('fs');
+
+let mainWindow = null;
+let splashWindow = null;
+let tray = null;
+let backendProcess = null;
+let isQuitting = false;
+
+const BACKEND_PORT = 8000;
+const BACKEND_HEALTH_URL = `http://127.0.0.1:${BACKEND_PORT}/api/health`;
+const MAX_WAIT_MS = 30000;   // 30s max wait for backend
+const POLL_INTERVAL_MS = 800; // poll every 800ms
+
+// ── Window state persistence ──────────────────────────────────────────────────
+const STATE_FILE = path.join(app.getPath('userData'), 'window-state.json');
+
+function loadWindowState() {
+  try {
+    if (fs.existsSync(STATE_FILE)) {
+      return JSON.parse(fs.readFileSync(STATE_FILE, 'utf8'));
+    }
+  } catch {}
+  return { width: 1380, height: 900, x: undefined, y: undefined };
+}
+
+function saveWindowState() {
+  if (!mainWindow) return;
+  try {
+    const bounds = mainWindow.getBounds();
+    fs.writeFileSync(STATE_FILE, JSON.stringify(bounds));
+  } catch {}
+}
+
+// ── Backend health check ──────────────────────────────────────────────────────
+function checkBackendHealth() {
+  return new Promise((resolve) => {
+    const req = http.get(BACKEND_HEALTH_URL, { timeout: 2000 }, (res) => {
+      resolve(res.statusCode === 200);
+    });
+    req.on('error', () => resolve(false));
+    req.on('timeout', () => { req.destroy(); resolve(false); });
+  });
+}
+
+// ── Poll backend until ready or timeout ──────────────────────────────────────
+function waitForBackend() {
+  return new Promise((resolve) => {
+    let elapsed = 0;
+
+    const poll = async () => {
+      const ok = await checkBackendHealth();
+      if (ok) {
+        resolve(true);
+        return;
+      }
+      elapsed += POLL_INTERVAL_MS;
+      if (elapsed >= MAX_WAIT_MS) {
+        resolve(false); // timed out — open anyway
+        return;
+      }
+      setTimeout(poll, POLL_INTERVAL_MS);
+    };
+
+    poll();
+  });
+}
+
+// ── Start bundled FastAPI backend ─────────────────────────────────────────────
+function startBackend() {
+  const isDev = !app.isPackaged;
+
+  // In dev mode: try running python directly
+  // In production: run the bundled aegis_backend.exe
+  let backendExecutable, args;
+
+  if (isDev) {
+    // Development: use the venv python
+    const projectRoot = path.resolve(__dirname, '../..');
+    const pythonExe = path.join(projectRoot, 'venv', 'Scripts', 'python.exe');
+    backendExecutable = pythonExe;
+    args = ['-m', 'uvicorn', 'backend.app.main:app', '--host', '127.0.0.1', '--port', String(BACKEND_PORT)];
+    process.env.PYTHONPATH = projectRoot;
+    console.log(`[Aegis Desktop] Dev mode: launching Python backend from ${projectRoot}`);
+  } else {
+    // Production: use the bundled .exe
+    backendExecutable = path.join(process.resourcesPath, 'backend', 'aegis_backend.exe');
+    args = [];
+    console.log(`[Aegis Desktop] Production mode: launching backend exe from ${backendExecutable}`);
+  }
+
+  if (!fs.existsSync(backendExecutable)) {
+    console.warn(`[Aegis Desktop] Backend executable not found: ${backendExecutable}`);
+    return;
+  }
+
+  try {
+    backendProcess = spawn(backendExecutable, args, {
+      cwd: isDev ? path.resolve(__dirname, '../..') : process.resourcesPath,
+      detached: false,
+      stdio: 'pipe',
+      windowsHide: true,  // hide the console window on Windows
+    });
+
+    backendProcess.stdout?.on('data', (d) => {
+      const msg = d.toString().trim();
+      if (msg) console.log(`[Backend] ${msg}`);
+    });
+
+    backendProcess.stderr?.on('data', (d) => {
+      const msg = d.toString().trim();
+      if (msg) console.warn(`[Backend STDERR] ${msg}`);
+    });
+
+    backendProcess.on('error', (err) => {
+      console.error('[Aegis Desktop] Backend spawn error:', err);
+    });
+
+    backendProcess.on('exit', (code) => {
+      console.log(`[Aegis Desktop] Backend exited with code ${code}`);
+      if (!isQuitting && mainWindow) {
+        // Backend crashed — show notification in window
+        mainWindow.webContents.executeJavaScript(
+          `window.__AEGIS_BACKEND_DIED = true; console.warn('Backend process exited unexpectedly');`
+        ).catch(() => {});
+      }
+    });
+
+    console.log(`[Aegis Desktop] Backend process started (PID: ${backendProcess.pid})`);
+  } catch (err) {
+    console.error('[Aegis Desktop] Failed to start backend:', err);
+  }
+}
+
+// ── Splash window ─────────────────────────────────────────────────────────────
+function createSplashWindow() {
+  splashWindow = new BrowserWindow({
+    width: 480,
+    height: 340,
+    frame: false,
+    transparent: false,
+    resizable: false,
+    center: true,
+    alwaysOnTop: true,
+    backgroundColor: '#070a12',
+    webPreferences: { nodeIntegration: false, contextIsolation: true },
+  });
+
+  splashWindow.loadFile(path.join(__dirname, 'splash.html'));
+  splashWindow.once('ready-to-show', () => splashWindow.show());
+}
+
+// ── Main app window ───────────────────────────────────────────────────────────
+function createMainWindow() {
+  const state = loadWindowState();
+
+  mainWindow = new BrowserWindow({
+    width: state.width || 1380,
+    height: state.height || 900,
+    x: state.x,
+    y: state.y,
+    minWidth: 1024,
+    minHeight: 700,
+    frame: true,
+    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
+    backgroundColor: '#070a12',
+    show: false, // show only after backend is ready
+    icon: path.join(__dirname, '../public/icon.png'),
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.cjs'),
+      nodeIntegration: false,
+      contextIsolation: true,
+      webSecurity: true,
+    },
+  });
+
+  // Load the app
+  const startUrl = app.isPackaged
+    ? `file://${path.join(__dirname, '../dist/index.html')}`
+    : (process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173');
+
+  mainWindow.loadURL(startUrl);
+
+  // Once loaded, show window and close splash
+  mainWindow.once('ready-to-show', () => {
+    if (splashWindow && !splashWindow.isDestroyed()) {
+      splashWindow.close();
+      splashWindow = null;
+    }
+    mainWindow.show();
+    mainWindow.focus();
+  });
+
+  // Persist window state on resize/move
+  mainWindow.on('resize', saveWindowState);
+  mainWindow.on('move', saveWindowState);
+
+  // Minimize to tray on close (hide instead of quit)
+  mainWindow.on('close', (e) => {
+    if (!isQuitting) {
+      e.preventDefault();
+      mainWindow.hide();
+    } else {
+      saveWindowState();
+    }
+  });
+
+  mainWindow.on('closed', () => { mainWindow = null; });
+
+  // Open external links in system browser, not Electron
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    shell.openExternal(url);
+    return { action: 'deny' };
+  });
+
+  return mainWindow;
+}
+
+// ── System Tray ───────────────────────────────────────────────────────────────
+function createTray() {
+  const iconPath = path.join(__dirname, '../public/icon.png');
+  const trayIcon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 });
+  tray = new Tray(trayIcon);
+  tray.setToolTip('PRAHARI AI — Sovereign Safety Intelligence');
+
+  const updateMenu = () => {
+    const contextMenu = Menu.buildFromTemplate([
+      {
+        label: 'PRAHARI AI',
+        enabled: false,
+        icon: trayIcon,
+      },
+      { type: 'separator' },
+      {
+        label: mainWindow?.isVisible() ? 'Hide Window' : 'Show Window',
+        click: () => {
+          if (mainWindow?.isVisible()) mainWindow.hide();
+          else { mainWindow?.show(); mainWindow?.focus(); }
+          updateMenu();
+        },
+      },
+      {
+        label: 'Open API Docs',
+        click: () => shell.openExternal(`http://127.0.0.1:${BACKEND_PORT}/docs`),
+      },
+      { type: 'separator' },
+      {
+        label: 'Quit PRAHARI AI',
+        click: () => {
+          isQuitting = true;
+          app.quit();
+        },
+      },
+    ]);
+    tray.setContextMenu(contextMenu);
+  };
+
+  updateMenu();
+
+  tray.on('double-click', () => {
+    if (mainWindow) { mainWindow.show(); mainWindow.focus(); }
+  });
+
+  tray.on('click', () => {
+    if (mainWindow?.isVisible()) mainWindow.hide();
+    else { mainWindow?.show(); mainWindow?.focus(); }
+    updateMenu();
+  });
+}
+
+// ── Native Application Menu ───────────────────────────────────────────────────
+function buildAppMenu() {
+  const template = [
+    {
+      label: 'File',
+      submenu: [
+        {
+          label: 'New Chat',
+          accelerator: 'CmdOrCtrl+K',
+          click: () => mainWindow?.webContents.executeJavaScript(
+            `document.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true }))`
+          ),
+        },
+        { type: 'separator' },
+        {
+          label: 'Open API Docs in Browser',
+          click: () => shell.openExternal(`http://127.0.0.1:${BACKEND_PORT}/docs`),
+        },
+        { type: 'separator' },
+        { role: 'quit', label: 'Quit PRAHARI AI' },
+      ],
+    },
+    {
+      label: 'View',
+      submenu: [
+        { role: 'reload' },
+        { role: 'forceReload' },
+        { type: 'separator' },
+        { role: 'resetZoom' },
+        { role: 'zoomIn' },
+        { role: 'zoomOut' },
+        { type: 'separator' },
+        { role: 'togglefullscreen' },
+        { type: 'separator' },
+        {
+          label: 'Toggle DevTools',
+          accelerator: 'CmdOrCtrl+Shift+I',
+          click: () => mainWindow?.webContents.toggleDevTools(),
+        },
+      ],
+    },
+    {
+      label: 'Help',
+      submenu: [
+        {
+          label: 'PRAHARI AI Documentation',
+          click: () => shell.openExternal('https://github.com/sourishnandy4-cell/Aegis-AI'),
+        },
+        {
+          label: 'FastAPI Backend Docs',
+          click: () => shell.openExternal(`http://127.0.0.1:${BACKEND_PORT}/docs`),
+        },
+        { type: 'separator' },
+        {
+          label: 'About PRAHARI AI',
+          click: () => dialog.showMessageBox(mainWindow, {
+            type: 'info',
+            title: 'About PRAHARI AI',
+            message: 'PRAHARI AI — Sovereign Industrial Safety Intelligence',
+            detail: 'Version 2.1.0\nBuilt for MRPL Refinery\n\n100% Offline / Air-Gapped\nPowered by Llama 3.2 + ChromaDB + BM25',
+            buttons: ['OK'],
+          }),
+        },
+      ],
+    },
+  ];
+
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+}
+
+// ── IPC handlers ──────────────────────────────────────────────────────────────
+ipcMain.handle('get-app-version', () => app.getVersion());
+ipcMain.handle('get-backend-url', () => `http://127.0.0.1:${BACKEND_PORT}`);
+ipcMain.handle('check-backend-health', () => checkBackendHealth());
+
+// ── App lifecycle ─────────────────────────────────────────────────────────────
+app.whenReady().then(async () => {
+  buildAppMenu();
+  createSplashWindow();
+  startBackend();
+
+  console.log('[Aegis Desktop] Waiting for backend to be ready...');
+  const backendReady = await waitForBackend();
+
+  if (backendReady) {
+    console.log('[Aegis Desktop] Backend is ready! Opening main window.');
+  } else {
+    console.warn('[Aegis Desktop] Backend did not respond in time — opening window anyway.');
+  }
+
+  createMainWindow();
+  createTray();
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) createMainWindow();
+    else { mainWindow?.show(); mainWindow?.focus(); }
+  });
+});
+
+app.on('before-quit', () => {
+  isQuitting = true;
+  saveWindowState();
+});
+
+app.on('window-all-closed', () => {
+  // On macOS, standard behavior is to keep app running until Cmd+Q
+  if (process.platform !== 'darwin') {
+    isQuitting = true;
+    app.quit();
+  }
+});
+
+app.on('quit', () => {
+  // Gracefully kill the backend process
+  if (backendProcess && !backendProcess.killed) {
+    console.log('[Aegis Desktop] Killing backend process...');
+    backendProcess.kill('SIGTERM');
+    // Force kill after 3s if needed
+    setTimeout(() => {
+      if (backendProcess && !backendProcess.killed) {
+        backendProcess.kill('SIGKILL');
+      }
+    }, 3000);
+  }
+});

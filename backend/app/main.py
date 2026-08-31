@@ -40,8 +40,14 @@ app = FastAPI(
 # ── Middleware ─────────────────────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "app://."],
-    allow_credentials=True,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "app://.",
+        # Allow LAN IP connections for Android APK (all 192.168.x.x / 10.x.x.x)
+        "*",
+    ],
+    allow_credentials=False,   # must be False when allow_origins=["*"]
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -103,6 +109,7 @@ async def root():
         "docs": "/docs",
         "endpoints": {
             "health":    "GET  /api/health",
+            "ping":      "GET  /api/ping",
             "chat":      "POST /api/chat",
             "stream":    "GET  /api/stream?query=...",
             "sessions":  "CRUD /api/sessions",
@@ -110,3 +117,10 @@ async def root():
             "telemetry": "GET  /api/telemetry",
         }
     }
+
+
+# ── Ping (lightweight health for mobile / Electron) ─────────────────────────────
+@app.get("/api/ping", tags=["Health"])
+async def ping():
+    """Ultra-lightweight ping for Capacitor APK and Electron health polling."""
+    return {"status": "ok", "version": settings.VERSION}

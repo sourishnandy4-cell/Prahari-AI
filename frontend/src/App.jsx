@@ -5,6 +5,16 @@ import ChatWindow from './components/ChatWindow';
 import FileUploadModal from './components/FileUploadModal';
 import SplashScreen from './components/SplashScreen';
 import GetStartedScreen from './components/GetStartedScreen';
+import { useIsMobile } from './hooks/useMediaQuery';
+import { useSwipeGesture } from './hooks/useSwipeGesture';
+
+// ── API base URL: supports LAN mode for Android APK (set VITE_API_BASE_URL in .env.mobile)
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+
+/** Build API url: works both in web proxy mode and absolute LAN mode */
+function apiUrl(path) {
+  return `${API_BASE}${path}`;
+}
 
 export default function App() {
   const [sessions, setSessions] = useState([]);
@@ -15,8 +25,23 @@ export default function App() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [selectedQuery, setSelectedQuery] = useState('');
   const [indexedFiles, setIndexedFiles] = useState([]);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const abortRef = useRef(null);
+
+  // ── Responsive: default sidebar closed on mobile ─────────────────────────
+  const isMobile = useIsMobile();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  // Close sidebar by default when screen shrinks to mobile
+  useEffect(() => {
+    if (isMobile) setIsSidebarOpen(false);
+    else setIsSidebarOpen(true);
+  }, [isMobile]);
+
+  // ── Swipe gesture: right-edge swipe opens sidebar on mobile ──────────────
+  useSwipeGesture({
+    onSwipeRight: () => { if (isMobile) setIsSidebarOpen(true); },
+    onSwipeLeft:  () => { if (isMobile) setIsSidebarOpen(false); },
+  });
 
   // App stage state machine: 'splash' -> 'get_started' -> 'app'
   const [stage, setStage] = useState(() => {
@@ -44,7 +69,7 @@ export default function App() {
   // ── Fetch all chat sessions ───────────────────────────────────────────────
   const fetchSessions = async () => {
     try {
-      const res = await fetch('/api/sessions');
+      const res = await fetch(apiUrl('/api/sessions'));
       if (res.ok) {
         const data = await res.json();
         const list = Array.isArray(data) ? data : (data.sessions || []);
@@ -65,9 +90,11 @@ export default function App() {
     setMessages([]);
     setLoading(false);
     setIsStreaming(false);
+    // Close sidebar on mobile after starting new chat
+    if (isMobile) setIsSidebarOpen(false);
 
     try {
-      const res = await fetch('/api/sessions', {
+      const res = await fetch(apiUrl('/api/sessions'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: 'New chat' }),
@@ -94,9 +121,11 @@ export default function App() {
     setSessionId(id);
     setLoading(false);
     setIsStreaming(false);
+    // Close sidebar on mobile after selecting session
+    if (isMobile) setIsSidebarOpen(false);
 
     try {
-      const res = await fetch(`/api/sessions/${id}/messages`);
+      const res = await fetch(apiUrl(`/api/sessions/${id}/messages`));
       if (res.ok) {
         const data = await res.json();
         const rawMsgs = data.messages || [];
@@ -120,7 +149,7 @@ export default function App() {
   // ── Delete a session ──────────────────────────────────────────────────────
   const handleDeleteSession = async (id) => {
     try {
-      await fetch(`/api/sessions/${id}`, { method: 'DELETE' });
+      await fetch(apiUrl(`/api/sessions/${id}`), { method: 'DELETE' });
     } catch {}
 
     setSessions((prev) => prev.filter((s) => s.id !== id));
@@ -132,7 +161,7 @@ export default function App() {
   // ── Rename a session ──────────────────────────────────────────────────────
   const handleRenameSession = async (id, newTitle) => {
     try {
-      await fetch(`/api/sessions/${id}`, {
+      await fetch(apiUrl(`/api/sessions/${id}`), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title: newTitle }),
@@ -149,14 +178,13 @@ export default function App() {
     const init = async () => {
       const existingSessions = await fetchSessions();
       if (existingSessions.length > 0) {
-        // Load latest session or start fresh
         handleSelectSession(existingSessions[0].id);
       } else {
         handleNewChat();
       }
 
       try {
-        const docRes = await fetch('/api/documents');
+        const docRes = await fetch(apiUrl('/api/documents'));
         if (docRes.ok) {
           const data = await docRes.json();
           const docs = Array.isArray(data) ? data : (data.documents || []);
@@ -181,7 +209,7 @@ export default function App() {
 
   const refreshDocuments = async () => {
     try {
-      const res = await fetch('/api/documents');
+      const res = await fetch(apiUrl('/api/documents'));
       if (res.ok) {
         const data = await res.json();
         const docs = Array.isArray(data) ? data : (data.documents || []);
@@ -216,7 +244,7 @@ export default function App() {
           try {
             const formData = new FormData();
             formData.append('file', att.file);
-            fetch('/api/upload', { method: 'POST', body: formData }).then(() => refreshDocuments());
+            fetch(apiUrl('/api/upload'), { method: 'POST', body: formData }).then(() => refreshDocuments());
           } catch (e) {
             console.error('Error auto-uploading attached doc', e);
           }
@@ -263,7 +291,7 @@ export default function App() {
       setMessages((prev) => [...prev, initialBotMessage]);
 
       try {
-        const url = `/api/stream?query=${encodeURIComponent(augmentedQuery)}${currentSessionId ? `&session_id=${currentSessionId}` : ''}`;
+        const url = apiUrl(`/api/stream?query=${encodeURIComponent(augmentedQuery)}${currentSessionId ? `&session_id=${currentSessionId}` : ''}`);
         const eventSource = new EventSource(url);
         abortRef.current = eventSource;
 
@@ -364,7 +392,7 @@ export default function App() {
               ? {
                   ...msg,
                   streaming: false,
-                  text: 'Failed to initialize SSE stream. Ensure FastAPI backend is online at http://localhost:8000.',
+                  text: 'Failed to initialize SSE stream. Ensure FastAPI backend is online.',
                 }
               : msg
           )
@@ -374,7 +402,7 @@ export default function App() {
       }
     } else {
       try {
-        const res = await fetch('/api/chat', {
+        const res = await fetch(apiUrl('/api/chat'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -417,7 +445,7 @@ export default function App() {
         const errorMessage = {
           id: botMsgId,
           sender: 'bot',
-          text: 'Network Error: Cannot connect to Aegis AI backend. Please verify FastAPI is running (http://localhost:8000).',
+          text: 'Network Error: Cannot connect to Aegis AI backend. Please verify FastAPI is running.',
           citations: [],
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         };
@@ -431,7 +459,7 @@ export default function App() {
   const handleClearChat = async () => {
     if (sessionId) {
       try {
-        await fetch(`/api/sessions/${sessionId}/messages`, { method: 'DELETE' });
+        await fetch(apiUrl(`/api/sessions/${sessionId}/messages`), { method: 'DELETE' });
       } catch {}
     }
     setMessages([]);
@@ -459,8 +487,18 @@ export default function App() {
       <div className={`flex h-screen w-screen bg-zinc-950 text-zinc-100 overflow-hidden font-sans transition-opacity duration-300 ${
         stage !== 'app' ? 'opacity-0 pointer-events-none fixed inset-0' : 'opacity-100'
       }`}>
+        {/* Mobile sidebar backdrop overlay — tap to close */}
+        {isMobile && isSidebarOpen && (
+          <div
+            className="sidebar-backdrop"
+            onClick={() => setIsSidebarOpen(false)}
+            aria-label="Close sidebar"
+          />
+        )}
+
         <Sidebar
           isOpen={isSidebarOpen}
+          isMobile={isMobile}
           onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
           onNewChat={handleNewChat}
           sessions={sessions}
@@ -481,6 +519,7 @@ export default function App() {
           selectedQuery={selectedQuery}
           sessionId={sessionId}
           isSidebarOpen={isSidebarOpen}
+          isMobile={isMobile}
           onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
           onNewChat={handleNewChat}
         />
@@ -490,9 +529,9 @@ export default function App() {
           onClose={() => setIsUploadModalOpen(false)}
           onIngestSuccess={handleIngestSuccess}
           indexedFiles={indexedFiles}
+          apiUrl={apiUrl}
         />
       </div>
     </>
   );
 }
-

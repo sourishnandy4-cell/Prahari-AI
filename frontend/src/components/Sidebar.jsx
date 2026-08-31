@@ -25,6 +25,7 @@ export default function Sidebar({
   onOpenUploadModal, 
   onReplayIntro,
   isOpen = true,
+  isMobile = false,
   onToggleSidebar
 }) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -95,10 +96,19 @@ export default function Sidebar({
     return title;
   };
 
-  return (
-    <aside 
-      className={`h-screen bg-zinc-950/95 border-r border-zinc-800/80 flex flex-col justify-between p-3.5 z-30 shrink-0 select-none transition-all duration-300 ${
+  // On mobile: fixed slide-over drawer. On desktop: static sidebar.
+  const mobileClasses = isMobile
+    ? `fixed top-0 left-0 h-full z-30 transform transition-transform duration-300 ease-in-out ${
+        isOpen ? 'translate-x-0' : '-translate-x-full'
+      } w-80 shadow-2xl`
+    : `h-screen shrink-0 transition-all duration-300 ${
         isOpen ? 'w-72 md:w-80' : 'w-0 p-0 border-r-0 overflow-hidden'
+      }`;
+
+  return (
+    <aside
+      className={`bg-zinc-950/95 border-r border-zinc-800/80 flex flex-col justify-between p-3.5 select-none ${mobileClasses} ${
+        !isMobile && !isOpen ? 'p-0 border-r-0 overflow-hidden' : ''
       }`}
     >
       <div className="flex flex-col gap-3 overflow-hidden flex-1">

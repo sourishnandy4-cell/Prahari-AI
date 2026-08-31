@@ -69,12 +69,15 @@ export default function SplashScreen({ onComplete }) {
           playsInline
           preload="auto"
           onEnded={handleFinish}
+          onError={handleFinish}
           className="w-full h-full object-cover pointer-events-none mix-blend-screen transform-gpu"
         >
+          <source src="./intro_video_hq.mp4" type="video/mp4" />
+          <source src="./intro_video_hq.webm" type="video/webm" />
+          <source src="./intro_video.mp4" type="video/mp4" />
+          <source src="./intro_video.webm" type="video/webm" />
           <source src="/intro_video_hq.mp4" type="video/mp4" />
-          <source src="/intro_video_hq.webm" type="video/webm" />
           <source src="/intro_video.mp4" type="video/mp4" />
-          <source src="/intro_video.webm" type="video/webm" />
         </video>
       </div>
 

@@ -3,11 +3,179 @@
 @tailwind utilities;
 
 @layer base {
+  *,
+  *::before,
+  *::after {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+  }
+
+  html {
+    /* Prevent font scaling in landscape on iOS */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
   body {
     @apply bg-zinc-950 text-zinc-100 font-sans antialiased selection:bg-white selection:text-zinc-950;
     overflow: hidden;
+    /* Mobile: prevent overscroll bounce revealing white background */
+    overscroll-behavior: none;
+    /* Safe area padding for modern iOS/Android notches and home bars */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Make all scrollable containers use momentum scrolling on iOS */
+  .overflow-y-auto,
+  .overflow-y-scroll {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Prevent text select on interactive elements (better mobile UX) */
+  button, a, label {
+    user-select: none;
+    -webkit-user-select: none;
   }
 }
+
+/* ── Safe-Area Bottom Spacer (for home-bar on iPhone/Android) ──────────────── */
+.safe-bottom {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+.safe-bottom-only {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* ── Glass Panel Utilities ──────────────────────────────────────────────────── */
+.glass-panel {
+  background: rgba(18, 18, 20, 0.75);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-panel-glow {
+  background: rgba(18, 18, 20, 0.9);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 30px -10px rgba(255, 255, 255, 0.08);
+}
+
+/* ── Font Utilities ─────────────────────────────────────────────────────────── */
+.font-cursive {
+  font-family: 'Dancing Script', 'Alex Brush', 'Great Vibes', 'Satisfy', cursive;
+}
+
+.font-cursive-dancing {
+  font-family: 'Dancing Script', cursive;
+}
+
+.font-cursive-alex {
+  font-family: 'Alex Brush', cursive;
+}
+
+.font-serif-elegant {
+  font-family: 'Playfair Display', Georgia, serif;
+}
+
+/* ── Text Glow Effects ──────────────────────────────────────────────────────── */
+.text-glow-silver {
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.75), 0 0 45px rgba(255, 255, 255, 0.35);
+}
+
+.text-glow-cyan {
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 0 0 40px rgba(160, 220, 255, 0.4);
+}
+
+/* ── Responsive Typography ──────────────────────────────────────────────────── */
+.text-fluid-sm {
+  font-size: clamp(0.75rem, 2vw, 0.875rem);
+}
+
+.text-fluid-base {
+  font-size: clamp(0.875rem, 2.5vw, 1rem);
+}
+
+.text-fluid-lg {
+  font-size: clamp(1rem, 3vw, 1.25rem);
+}
+
+.text-fluid-xl {
+  font-size: clamp(1.25rem, 4vw, 1.875rem);
+}
+
+/* ── Custom Modern Minimalist Monochrome Scrollbar ──────────────────────────── */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(63, 63, 70, 0.6);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(161, 161, 170, 0.8);
+}
+
+/* ── Mobile: Hide scrollbars but keep scroll functional ─────────────────────── */
+@media (max-width: 767px) {
+  ::-webkit-scrollbar {
+    display: none;
+  }
+
+  * {
+    scrollbar-width: none;
+  }
+}
+
+/* ── Mobile Sidebar Backdrop Overlay ────────────────────────────────────────── */
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(2px);
+  z-index: 20;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Mobile Input Bar (avoid virtual keyboard overlap) ──────────────────────── */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .mobile-input-bar {
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+  }
+}
+
+/* ── Prevent tap flash on iOS ───────────────────────────────────────────────── */
+input, textarea, select, button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* ── Touch Targets (WCAG: min 48x48px) ─────────────────────────────────────── */
+@media (max-width: 767px) {
+  .touch-target {
+    min-width: 48px;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
 
 .glass-panel {
   background: rgba(18, 18, 20, 0.75);

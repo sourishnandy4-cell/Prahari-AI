@@ -197,17 +197,24 @@ export default function MessageItem({ message }) {
                     animate={{ opacity: 1, height: 'auto' }}
                     className="mt-2 space-y-1.5"
                   >
-                    {message.citations.map((cite, idx) => (
-                      <div key={idx} className="p-2.5 rounded-lg bg-zinc-950 border border-zinc-800/90 text-xs">
-                        <div className="flex items-center justify-between text-zinc-200 font-medium mb-1">
-                          <span className="truncate pr-2 font-mono text-[11px]">📄 {cite.source}</span>
-                          <span className="px-1.5 py-0.2 rounded bg-zinc-800 text-[10px] text-cyan-400 font-mono shrink-0">Page {cite.page}</span>
+                    {message.citations.map((cite, idx) => {
+                      const docName = cite.source || cite.document || cite.filename || 'Safety Reference';
+                      const pageNum = cite.page ?? cite.section ?? '-';
+                      const snippetText = cite.snippet || cite.text || cite.content || '';
+                      return (
+                        <div key={idx} className="p-2.5 rounded-lg bg-zinc-950 border border-zinc-800/90 text-xs">
+                          <div className="flex items-center justify-between text-zinc-200 font-medium mb-1">
+                            <span className="truncate pr-2 font-mono text-[11px]">📄 {docName}</span>
+                            <span className="px-1.5 py-0.2 rounded bg-zinc-800 text-[10px] text-cyan-400 font-mono shrink-0">Page {pageNum}</span>
+                          </div>
+                          {snippetText && (
+                            <p className="text-zinc-400 italic text-[11px] leading-relaxed">
+                              "{snippetText}"
+                            </p>
+                          )}
                         </div>
-                        <p className="text-zinc-400 italic text-[11px] leading-relaxed">
-                          "{cite.snippet}"
-                        </p>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </motion.div>
                 )}
               </div>

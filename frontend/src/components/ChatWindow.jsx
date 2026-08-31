@@ -77,6 +77,7 @@ export default function ChatWindow({
   selectedQuery, 
   sessionId,
   isSidebarOpen,
+  isMobile = false,
   onToggleSidebar,
   onNewChat
 }) {
@@ -243,14 +244,14 @@ export default function ChatWindow({
       {/* Header (Clean & Modern like Gemini / ChatGPT) */}
       <header className="h-14 bg-zinc-950/80 backdrop-blur-md border-b border-zinc-800/80 px-4 md:px-6 flex items-center justify-between z-10 shrink-0">
         <div className="flex items-center gap-3">
-          {/* Sidebar Toggle button if collapsed */}
-          {!isSidebarOpen && (
+          {/* Sidebar Toggle button — always shown on mobile, shown when collapsed on desktop */}
+          {(isMobile || !isSidebarOpen) && (
             <button
               onClick={onToggleSidebar}
-              className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer"
+              className="p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors cursor-pointer touch-target"
               title="Open sidebar"
             >
-              <PanelLeft className="w-4 h-4" />
+              <PanelLeft className="w-5 h-5" />
             </button>
           )}
 
@@ -391,7 +392,7 @@ export default function ChatWindow({
       </div>
 
       {/* Floating Bottom Input Bar (ChatGPT / Gemini Style with + Attachment Icon) */}
-      <footer className="p-3 sm:p-5 z-10 shrink-0">
+      <footer className={`z-10 shrink-0 ${isMobile ? 'mobile-input-bar p-3 pt-3' : 'p-3 sm:p-5'}`}>
         <form onSubmit={handleSubmit} className="max-w-3xl mx-auto">
           
           {/* Attachment Preview Tray above the input */}
@@ -455,18 +456,37 @@ export default function ChatWindow({
               />
             </div>
 
-            {/* Text Input */}
-            <input
-              ref={inputRef}
-              type="text"
-              value={inputQuery}
-              onChange={(e) => setInputQuery(e.target.value)}
-              onKeyDown={handleKeyDown}
-              onPaste={handlePaste}
-              placeholder="Ask a safety question or attach pictures/docs to analyze..."
-              disabled={isActive}
-              className="w-full bg-transparent px-2 py-2 text-zinc-100 placeholder-zinc-500 text-sm focus:outline-none font-sans"
-            />
+            {/* Text Input — textarea on mobile for multi-line */}
+            {isMobile ? (
+              <textarea
+                ref={inputRef}
+                value={inputQuery}
+                onChange={(e) => setInputQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onPaste={handlePaste}
+                placeholder="Ask a safety question..."
+                disabled={isActive}
+                rows={1}
+                style={{ resize: 'none', overflow: 'hidden' }}
+                onInput={(e) => {
+                  e.target.style.height = 'auto';
+                  e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                }}
+                className="w-full bg-transparent px-2 py-2 text-zinc-100 placeholder-zinc-500 text-sm focus:outline-none font-sans leading-relaxed"
+              />
+            ) : (
+              <input
+                ref={inputRef}
+                type="text"
+                value={inputQuery}
+                onChange={(e) => setInputQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onPaste={handlePaste}
+                placeholder="Ask a safety question or attach pictures/docs to analyze..."
+                disabled={isActive}
+                className="w-full bg-transparent px-2 py-2 text-zinc-100 placeholder-zinc-500 text-sm focus:outline-none font-sans"
+              />
+            )}
 
             {/* Voice Input (Mic) Button */}
             <button
