@@ -262,13 +262,12 @@ async function createMainWindow() {
   mainWindow.on('resize', saveWindowState);
   mainWindow.on('move', saveWindowState);
 
-  // Minimize to tray on close (hide instead of quit)
-  mainWindow.on('close', (e) => {
-    if (!isQuitting) {
-      e.preventDefault();
-      mainWindow.hide();
-    } else {
-      saveWindowState();
+  // Clean exit on window close
+  mainWindow.on('close', () => {
+    isQuitting = true;
+    saveWindowState();
+    if (backendProcess) {
+      try { backendProcess.kill('SIGTERM'); } catch (e) {}
     }
   });
 
@@ -394,7 +393,7 @@ function buildAppMenu() {
             type: 'info',
             title: 'About PRAHARI AI',
             message: 'PRAHARI AI — Sovereign Industrial Safety Intelligence',
-            detail: 'Version 2.4.0\nBuilt for MRPL Refinery\n\n100% Offline / Air-Gapped\nPowered by Llama 3.2 + ChromaDB + BM25',
+            detail: 'Version 2.5.0\nBuilt for MRPL Refinery\n\n100% Offline / Air-Gapped\nPowered by Llama 3.2 + ChromaDB + BM25',
             buttons: ['OK'],
           }),
         },

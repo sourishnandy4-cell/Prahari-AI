@@ -1,7 +1,7 @@
 {
   "name": "aegis-ai-frontend",
   "private": true,
-  "version": "2.4.0",
+  "version": "2.5.0",
   "type": "module",
   "description": "PRAHARI AI — Sovereign Industrial Safety Intelligence for MRPL",
   "author": "Aegis AI Team",
@@ -116,7 +116,8 @@
       "installerIcon": "public/icon.ico",
       "uninstallerIcon": "public/icon.ico",
       "installerHeaderIcon": "public/icon.ico",
-      "deleteAppDataOnUninstall": false
+      "deleteAppDataOnUninstall": false,
+      "include": "scripts/installer.nsh"
     },
     "mac": {
       "target": [
