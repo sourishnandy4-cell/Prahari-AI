@@ -23,8 +23,22 @@ let isQuitting = false;
 
 const BACKEND_PORT = 8000;
 const BACKEND_HEALTH_URL = `http://127.0.0.1:${BACKEND_PORT}/api/ping`;
-const MAX_WAIT_MS = 30000;   // 30s max wait for backend
-const POLL_INTERVAL_MS = 600; // poll every 600ms
+const MAX_WAIT_MS = 6000;    // 6s max wait for backend
+const POLL_INTERVAL_MS = 400; // poll every 400ms
+
+// Ensure single instance
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on('second-instance', () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.show();
+      mainWindow.focus();
+    }
+  });
+}
 
 // ── Window state persistence ──────────────────────────────────────────────────
 const STATE_FILE = path.join(app.getPath('userData'), 'window-state.json');
@@ -249,14 +263,22 @@ async function createMainWindow() {
   });
 
   // Once loaded, show window and close splash
-  mainWindow.once('ready-to-show', () => {
+  const revealWindow = () => {
     if (splashWindow && !splashWindow.isDestroyed()) {
-      splashWindow.close();
+      try { splashWindow.close(); } catch {}
       splashWindow = null;
     }
-    mainWindow.show();
-    mainWindow.focus();
-  });
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      if (!mainWindow.isVisible()) {
+        mainWindow.show();
+      }
+      mainWindow.focus();
+    }
+  };
+
+  mainWindow.once('ready-to-show', revealWindow);
+  // Fail-safe: guaranteed window display within 2s even if ready-to-show lags
+  setTimeout(revealWindow, 2000);
 
   // Persist window state on resize/move
   mainWindow.on('resize', saveWindowState);
