@@ -24,6 +24,18 @@ async def upload_document(file: UploadFile = File(...)):
         # Ingest PDF into ChromaDB
         if ext == ".pdf":
             result = ingest_pdf_manual(file_path)
+            try:
+                from backend.app.services.document_manager import register_document
+                register_document(
+                    doc_id=str(uuid.uuid4()),
+                    filename=result["filename"],
+                    filepath=result["filepath"],
+                    total_pages=result["total_pages"],
+                    total_chunks=result["total_chunks_indexed"],
+                    file_size_kb=result["file_size_kb"],
+                )
+            except Exception:
+                pass
             return result
             
         # Ingest Text/Markdown/CSV into ChromaDB
@@ -50,16 +62,29 @@ async def upload_document(file: UploadFile = File(...)):
             vectorstore = get_vectorstore()
             if docs:
                 vectorstore.add_documents(docs)
-                
-            return {
+            
+            res_dict = {
                 "status": "success",
                 "filename": filename,
                 "filepath": os.path.abspath(file_path),
-                "total_pages": 1,
+                "total_pages": max(1, len(docs) // 3),
                 "total_chunks_indexed": len(docs),
                 "file_size_kb": round(os.path.getsize(file_path) / 1024, 2),
                 "type": "document"
             }
+            try:
+                from backend.app.services.document_manager import register_document
+                register_document(
+                    doc_id=str(uuid.uuid4()),
+                    filename=res_dict["filename"],
+                    filepath=res_dict["filepath"],
+                    total_pages=res_dict["total_pages"],
+                    total_chunks=res_dict["total_chunks_indexed"],
+                    file_size_kb=res_dict["file_size_kb"],
+                )
+            except Exception:
+                pass
+            return res_dict
             
         # Handle Images (Diagrams, Blueprints, Photos)
         elif ext in [".png", ".jpg", ".jpeg", ".webp", ".bmp", ".svg"]:

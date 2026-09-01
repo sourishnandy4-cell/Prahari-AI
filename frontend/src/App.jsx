@@ -242,19 +242,26 @@ export default function App() {
       handleRenameSession(currentSessionId, autoTitle);
     }
 
-    // Process file attachments (e.g. upload documents to ChromaDB)
+    // Process file attachments (e.g. upload documents to ChromaDB & UPLOAD_DIR)
+    let primaryDocFilter = '';
     if (attachments.length > 0) {
       for (const att of attachments) {
-        if (att.file && (att.name.endsWith('.pdf') || att.name.endsWith('.txt') || att.name.endsWith('.md'))) {
+        if (att.file) {
           try {
             const formData = new FormData();
             formData.append('file', att.file);
-            fetch(apiUrl('/api/upload'), { method: 'POST', body: formData }).then(() => refreshDocuments());
+            await fetch(apiUrl('/api/upload'), { method: 'POST', body: formData });
+            if (!primaryDocFilter && (att.name.endsWith('.pdf') || att.name.endsWith('.txt') || att.name.endsWith('.md') || att.name.endsWith('.csv'))) {
+              primaryDocFilter = att.name;
+            }
           } catch (e) {
             console.error('Error auto-uploading attached doc', e);
           }
+        } else if (att.name && !primaryDocFilter) {
+          primaryDocFilter = att.name;
         }
       }
+      refreshDocuments();
     }
 
     const userMessage = {
@@ -296,7 +303,8 @@ export default function App() {
       setMessages((prev) => [...prev, initialBotMessage]);
 
       try {
-        const url = apiUrl(`/api/stream?query=${encodeURIComponent(augmentedQuery)}${currentSessionId ? `&session_id=${currentSessionId}` : ''}`);
+        const docParam = primaryDocFilter ? `&document_filter=${encodeURIComponent(primaryDocFilter)}` : '';
+        const url = apiUrl(`/api/stream?query=${encodeURIComponent(augmentedQuery)}${currentSessionId ? `&session_id=${currentSessionId}` : ''}${docParam}`);
         const eventSource = new EventSource(url);
         abortRef.current = eventSource;
 
@@ -413,6 +421,7 @@ export default function App() {
           body: JSON.stringify({
             query: augmentedQuery,
             session_id: currentSessionId,
+            document_filter: primaryDocFilter || undefined,
             use_agentic: true,
           }),
         });

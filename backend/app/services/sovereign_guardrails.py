@@ -71,15 +71,11 @@ class SovereignGuardrails:
         return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16].upper()
 
     def append_sovereign_footer(self, answer: str, query: str) -> str:
-        """Appends official sovereign compliance badges and audit metadata."""
+        """Appends official sovereign compliance badges and audit metadata in clean Markdown."""
         audit_hash = self.generate_audit_hash(query, answer)
         badge = (
             f"\n\n---\n"
-            f"<div class=\"flex items-center justify-between text-[10px] font-mono text-zinc-400 border-t border-zinc-800/80 pt-2.5 mt-2\">\n"
-            f"  <span>🛡️ CLASSIFICATION: SOVEREIGN OPERATIONAL DIRECTIVE</span>\n"
-            f"  <span>EVIDENCE HASH: <code>{audit_hash}</code></span>\n"
-            f"  <span>AIR-GAPPED &bull; ADVISORY ONLY (NO DIRECT SCADA CONTROL)</span>\n"
-            f"</div>"
+            f"> 🛡️ **Classification:** SOVEREIGN OPERATIONAL DIRECTIVE &bull; **Evidence Hash:** `{audit_hash}` &bull; **Mode:** 100% Offline / Air-Gapped\n"
         )
         return answer + badge
 
