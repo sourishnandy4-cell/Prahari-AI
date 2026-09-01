@@ -102,15 +102,15 @@ def compile_fastapi_backend():
         exe_path = os.path.join(dist_dir, "aegis_backend", "aegis_backend.exe")
         if os.path.exists(exe_path):
             size_mb = os.path.getsize(exe_path) / (1024 * 1024)
-            print(f"\n✅ Backend compiled successfully!")
+            print(f"\n[OK] Backend compiled successfully!")
             print(f"   Output: {exe_path}")
             print(f"   Size: {size_mb:.1f} MB")
             print(f"\nNext: Copy {os.path.join(dist_dir, 'aegis_backend')} folder")
             print("      into the Electron 'resources/backend/' directory.")
         else:
-            print(f"\n✅ Build succeeded. Check: {dist_dir}")
+            print(f"\n[OK] Build succeeded. Check: {dist_dir}")
     else:
-        print(f"\n❌ PyInstaller compilation failed (exit code {result.returncode}).")
+        print(f"\n[ERROR] PyInstaller compilation failed (exit code {result.returncode}).")
         print("   Ensure all dependencies are installed: pip install -r requirements.txt")
         print("   Also install: pip install pyinstaller")
         sys.exit(1)

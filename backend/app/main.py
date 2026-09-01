@@ -124,3 +124,25 @@ async def root():
 async def ping():
     """Ultra-lightweight ping for Capacitor APK and Electron health polling."""
     return {"status": "ok", "version": settings.VERSION}
+
+
+# ── Standalone Entrypoint for PyInstaller / Aegis Backend Executable ───────────
+if __name__ == "__main__":
+    import sys
+    import uvicorn
+
+    host = "127.0.0.1"
+    port = 8000
+
+    for i, arg in enumerate(sys.argv):
+        if arg == "--host" and i + 1 < len(sys.argv):
+            host = sys.argv[i + 1]
+        elif arg == "--port" and i + 1 < len(sys.argv):
+            try:
+                port = int(sys.argv[i + 1])
+            except ValueError:
+                pass
+
+    print(f"[PRAHARI Backend] Starting server on {host}:{port} (100% Offline / Air-Gapped)...")
+    uvicorn.run(app, host=host, port=port, log_level="info")
+
