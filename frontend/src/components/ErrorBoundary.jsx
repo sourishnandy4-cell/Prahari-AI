@@ -32,9 +32,15 @@ export default class ErrorBoundary extends React.Component {
             Prahari Interface Interruption
           </h2>
 
-          <p className="text-sm text-zinc-400 max-w-md mx-auto mb-6 leading-relaxed">
-            A rendering or WebGL initialization anomaly occurred. The air-gapped sovereign backend remains active.
+          <p className="text-sm text-zinc-400 max-w-md mx-auto mb-4 leading-relaxed">
+            A rendering or component anomaly occurred. The air-gapped sovereign backend remains active.
           </p>
+
+          {this.state.error && (
+            <div className="max-w-md mx-auto mb-6 p-3 rounded-xl bg-zinc-900 border border-zinc-800 text-left overflow-auto max-h-32 text-[11px] font-mono text-rose-300">
+              {this.state.error.toString()}
+            </div>
+          )}
 
           <div className="flex items-center gap-3">
             <button

@@ -10,7 +10,7 @@ async def check_health():
     """Quick liveness check — use /api/telemetry for full system metrics."""
     ollama_status = "disconnected"
     try:
-        async with httpx.AsyncClient(timeout=3.0) as client:
+        async with httpx.AsyncClient(timeout=0.6) as client:
             resp = await client.get(f"{settings.OLLAMA_BASE_URL}/api/tags")
             if resp.status_code == 200:
                 ollama_status = "connected"

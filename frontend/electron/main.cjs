@@ -22,9 +22,9 @@ let backendProcess = null;
 let isQuitting = false;
 
 const BACKEND_PORT = 8000;
-const BACKEND_HEALTH_URL = `http://127.0.0.1:${BACKEND_PORT}/api/health`;
+const BACKEND_HEALTH_URL = `http://127.0.0.1:${BACKEND_PORT}/api/ping`;
 const MAX_WAIT_MS = 30000;   // 30s max wait for backend
-const POLL_INTERVAL_MS = 800; // poll every 800ms
+const POLL_INTERVAL_MS = 600; // poll every 600ms
 
 // ── Window state persistence ──────────────────────────────────────────────────
 const STATE_FILE = path.join(app.getPath('userData'), 'window-state.json');
@@ -49,7 +49,7 @@ function saveWindowState() {
 // ── Backend health check ──────────────────────────────────────────────────────
 function checkBackendHealth() {
   return new Promise((resolve) => {
-    const req = http.get(BACKEND_HEALTH_URL, { timeout: 2000 }, (res) => {
+    const req = http.get(BACKEND_HEALTH_URL, { timeout: 1500 }, (res) => {
       resolve(res.statusCode === 200);
     });
     req.on('error', () => resolve(false));
@@ -391,7 +391,7 @@ function buildAppMenu() {
             type: 'info',
             title: 'About PRAHARI AI',
             message: 'PRAHARI AI — Sovereign Industrial Safety Intelligence',
-            detail: 'Version 2.6.2\nBuilt for MRPL Refinery\n\n100% Offline / Air-Gapped\nPowered by Llama 3.2 + ChromaDB + BM25',
+            detail: 'Version 2.7.0\nBuilt for MRPL Refinery\n\n100% Offline / Air-Gapped\nPowered by Llama 3.2 + ChromaDB + BM25',
             buttons: ['OK'],
           }),
         },

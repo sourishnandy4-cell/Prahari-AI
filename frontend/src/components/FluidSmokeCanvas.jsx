@@ -14,15 +14,20 @@ export default function FluidSmokeCanvas({ isBursting = false, className = '' })
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    // Request high-performance WebGL context with zero overhead flags
-    const gl = canvas.getContext('webgl', { 
-      alpha: true, 
-      antialias: false, 
-      depth: false, 
-      stencil: false,
-      preserveDrawingBuffer: false,
-      powerPreference: 'high-performance' 
-    });
+    let gl;
+    try {
+      gl = canvas.getContext('webgl', { 
+        alpha: true, 
+        antialias: false, 
+        depth: false, 
+        stencil: false,
+        preserveDrawingBuffer: false,
+        powerPreference: 'high-performance' 
+      }) || canvas.getContext('experimental-webgl');
+    } catch (e) {
+      console.warn('[FluidSmokeCanvas] WebGL not available:', e);
+      return;
+    }
     if (!gl) return;
 
     let animationFrameId;

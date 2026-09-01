@@ -22,18 +22,24 @@ export default function RollingCoinHero3D({ className = '' }) {
     camera.lookAt(0, 0.25, 0);
 
     // ── 3. High-Performance WebGL Renderer (Lag-Free) ─────────────────────────
-    const renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      alpha: true,
-      powerPreference: 'high-performance',
-      precision: 'mediump',
-    });
-    renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
-    renderer.setClearColor(0x000000, 0); // 100% transparent background
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.2;
-    container.appendChild(renderer.domElement);
+    let renderer;
+    try {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true,
+        powerPreference: 'high-performance',
+        precision: 'mediump',
+      });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+      renderer.setClearColor(0x000000, 0); // 100% transparent background
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.2;
+      container.appendChild(renderer.domElement);
+    } catch (e) {
+      console.warn('[RollingCoinHero3D] WebGL initialization failed:', e);
+      return;
+    }
 
     // ── 4. Fast Cinematic Lighting (Zero Shadow Map Overhead) ─────────────────
     const hemiLight = new THREE.HemisphereLight(0xffffff, 0x1e1e2f, 1.5);
@@ -381,7 +387,7 @@ export default function RollingCoinHero3D({ className = '' }) {
 
     // ── 10. Memory Cleanup on Unmount ────────────────────────────────────────
     return () => {
-      cancelAnimationFrame(animationFrameId);
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('mousemove', handleMouseMove);
 
@@ -406,9 +412,11 @@ export default function RollingCoinHero3D({ className = '' }) {
         particleMat,
       ].forEach((m) => m?.dispose?.());
 
-      renderer.dispose();
-      if (renderer.domElement && container.contains(renderer.domElement)) {
-        container.removeChild(renderer.domElement);
+      if (renderer) {
+        renderer.dispose();
+        if (renderer.domElement && container.contains(renderer.domElement)) {
+          container.removeChild(renderer.domElement);
+        }
       }
     };
   }, []);

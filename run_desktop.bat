@@ -22,13 +22,19 @@ if not exist "frontend\dist\index.html" (
     cd ..
 )
 
-REM ── Start FastAPI backend (background) ────────────────────────────────────
-echo [1/2] Starting FastAPI Sovereign Backend on port 8000...
-start /B "" venv\Scripts\python.exe -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
+REM ── Locate Python executable ───────────────────────────────────────────────
+set PYTHON_EXE=python
+if exist "venv\Scripts\python.exe" (
+    set PYTHON_EXE=venv\Scripts\python.exe
+)
 
-REM ── Wait 3 seconds for backend to initialize ──────────────────────────────
-echo [2/2] Waiting for backend to initialize...
-timeout /t 3 /nobreak >nul
+REM ── Start FastAPI backend (if not already running) ─────────────────────────
+echo [1/2] Starting FastAPI Sovereign Backend on port 8000...
+start /B "" %PYTHON_EXE% -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
+
+REM ── Wait 2 seconds for backend to initialize ──────────────────────────────
+echo [2/2] Initializing backend...
+timeout /t 2 /nobreak >nul
 
 REM ── Launch Electron Desktop App ───────────────────────────────────────────
 echo [3/2] Launching PRAHARI AI Desktop window...

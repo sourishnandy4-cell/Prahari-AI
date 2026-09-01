@@ -28,17 +28,23 @@ export default function NeuralBrainHero3D({ phase = 0, className = '' }) {
     camera.lookAt(0, 0, 0);
 
     // ── 2. Optimized WebGL Renderer ────────────────────────────────────────
-    const renderer = new THREE.WebGLRenderer({
-      antialias: true,
-      alpha: true,
-      powerPreference: 'high-performance',
-    });
-    renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
-    renderer.setClearColor(0x000000, 0);
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.35;
-    container.appendChild(renderer.domElement);
+    let renderer;
+    try {
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        alpha: true,
+        powerPreference: 'high-performance',
+      });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+      renderer.setClearColor(0x000000, 0);
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.35;
+      container.appendChild(renderer.domElement);
+    } catch (e) {
+      console.warn('[NeuralBrainHero3D] WebGL initialization failed:', e);
+      return;
+    }
 
     const brainGroup = new THREE.Group();
     scene.add(brainGroup);
@@ -281,7 +287,7 @@ export default function NeuralBrainHero3D({ phase = 0, className = '' }) {
 
     // ── 10. Memory Cleanup ────────────────────────────────────────────────
     return () => {
-      cancelAnimationFrame(animationFrameId);
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('mousemove', handleMouseMove);
 
@@ -289,9 +295,11 @@ export default function NeuralBrainHero3D({ phase = 0, className = '' }) {
       [brainMaterial, lineMaterial, coreMat].forEach((m) => m?.dispose?.());
       particleTexture?.dispose?.();
 
-      renderer.dispose();
-      if (renderer.domElement && container.contains(renderer.domElement)) {
-        container.removeChild(renderer.domElement);
+      if (renderer) {
+        renderer.dispose();
+        if (renderer.domElement && container.contains(renderer.domElement)) {
+          container.removeChild(renderer.domElement);
+        }
       }
     };
   }, []);
