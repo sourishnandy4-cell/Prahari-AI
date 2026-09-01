@@ -391,7 +391,7 @@ function buildAppMenu() {
             type: 'info',
             title: 'About PRAHARI AI',
             message: 'PRAHARI AI — Sovereign Industrial Safety Intelligence',
-            detail: 'Version 2.6.0\nBuilt for MRPL Refinery\n\n100% Offline / Air-Gapped\nPowered by Llama 3.2 + ChromaDB + BM25',
+            detail: 'Version 2.6.1\nBuilt for MRPL Refinery\n\n100% Offline / Air-Gapped\nPowered by Llama 3.2 + ChromaDB + BM25',
             buttons: ['OK'],
           }),
         },
