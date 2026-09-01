@@ -326,7 +326,7 @@ export default function Sidebar({
             <span>Replay Intro</span>
           </button>
           <span className="text-[10px] text-zinc-500 font-mono">
-            MRPL v2.6.1
+            MRPL v2.6.2
           </span>
         </div>
       </div>
