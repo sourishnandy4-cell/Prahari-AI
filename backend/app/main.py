@@ -1,5 +1,6 @@
 import os
 import uuid
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -17,45 +18,10 @@ from backend.app.routes import (
     telemetry_router,
 )
 
-# ── App init ───────────────────────────────────────────────────────────────────
-app = FastAPI(
-    title=settings.PROJECT_NAME,
-    version=settings.VERSION,
-    description=(
-        "Aegis AI — Sovereign On-Premise Agentic RAG Backend for MRPL Industrial Safety Manuals.\n\n"
-        "Features:\n"
-        "- Agentic RAG: query rewriting, multi-hop reasoning, self-critique\n"
-        "- Hybrid Search: BM25 + ChromaDB dense vector with RRF fusion\n"
-        "- Streaming SSE: real-time token-by-token LLM output\n"
-        "- Session History: SQLite-backed conversation persistence\n"
-        "- Document Manager: upload, list, delete, re-index PDFs\n"
-        "- Telemetry: Ollama health, ChromaDB stats, system resources\n"
-        "- Auth: optional API key guard\n"
-        "- 100% Offline / Air-Gapped"
-    ),
-    docs_url="/docs",
-    redoc_url="/redoc",
-)
 
-# ── Middleware ─────────────────────────────────────────────────────────────────
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "app://.",
-        # Allow LAN IP connections for Android APK (all 192.168.x.x / 10.x.x.x)
-        "*",
-    ],
-    allow_credentials=False,   # must be False when allow_origins=["*"]
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-app.add_middleware(APIKeyMiddleware)
-
-# ── Startup ────────────────────────────────────────────────────────────────────
-@app.on_event("startup")
-async def startup_event():
+# ── Lifespan (replaces deprecated @app.on_event) ───────────────────────────────
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     """Initialize SQLite tables and auto-seed default MRPL SOP if empty."""
     init_db()
     init_document_table()
@@ -88,8 +54,48 @@ async def startup_event():
         except Exception as e:
             print(f"[Aegis Startup] Warning auto-seeding default SOP: {e}")
 
+    yield  # App runs here
+    # (Shutdown logic can go here if needed)
 
-# ── Routers ────────────────────────────────────────────────────────────────────
+
+# ── App init ───────────────────────────────────────────────────────────────────
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    version=settings.VERSION,
+    lifespan=lifespan,
+    description=(
+        "Aegis AI — Sovereign On-Premise Agentic RAG Backend for MRPL Industrial Safety Manuals.\n\n"
+        "Features:\n"
+        "- Agentic RAG: query rewriting, multi-hop reasoning, self-critique\n"
+        "- Hybrid Search: BM25 + ChromaDB dense vector with RRF fusion\n"
+        "- Streaming SSE: real-time token-by-token LLM output\n"
+        "- Session History: SQLite-backed conversation persistence\n"
+        "- Document Manager: upload, list, delete, re-index PDFs\n"
+        "- Telemetry: Ollama health, ChromaDB stats, system resources\n"
+        "- Auth: optional API key guard\n"
+        "- 100% Offline / Air-Gapped"
+    ),
+    docs_url="/docs",
+    redoc_url="/redoc",
+)
+
+# ── Middleware ─────────────────────────────────────────────────────────────────
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "app://.",
+        # Allow LAN IP connections for Android APK (all 192.168.x.x / 10.x.x.x)
+        "*",
+    ],
+    allow_credentials=False,   # must be False when allow_origins=["*"]
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+app.add_middleware(APIKeyMiddleware)
+
+
 app.include_router(health_router,    prefix="/api", tags=["Health"])
 app.include_router(chat_router,      prefix="/api", tags=["Chat (RAG)"])
 app.include_router(stream_router,    prefix="/api", tags=["Streaming (SSE)"])

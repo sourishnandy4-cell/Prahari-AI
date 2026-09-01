@@ -237,11 +237,11 @@ export default function NeuralBrainHero3D({ phase = 0, className = '' }) {
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
 
     // ── 8. High-Performance GPU Matrix Render Loop (0 CPU-Side Re-uploads) ─
-    let clock = new THREE.Clock();
+    const startTime = performance.now();
 
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
-      const elapsed = clock.getElapsedTime();
+      const elapsed = (performance.now() - startTime) / 1000;
 
       // Smooth mouse parallax lerp
       mouse.x += (mouse.targetX - mouse.x) * 0.04;

@@ -266,9 +266,7 @@ async function createMainWindow() {
   mainWindow.on('close', () => {
     isQuitting = true;
     saveWindowState();
-    if (backendProcess) {
-      try { backendProcess.kill('SIGTERM'); } catch (e) {}
-    }
+    killBackendProcess();
   });
 
   mainWindow.on('closed', () => { mainWindow = null; });
@@ -433,29 +431,63 @@ app.whenReady().then(async () => {
   });
 });
 
+// ── Process termination helper ───────────────────────────────────────────────
+function killBackendProcess() {
+  if (backendProcess && backendProcess.pid) {
+    const pid = backendProcess.pid;
+    console.log(`[Aegis Desktop] Terminating backend process tree (PID: ${pid})...`);
+    if (process.platform === 'win32') {
+      try {
+        const { execSync } = require('child_process');
+        execSync(`taskkill /F /T /PID ${pid} 2>nul`);
+      } catch (e) {
+        try { backendProcess.kill('SIGKILL'); } catch {}
+      }
+    } else {
+      try { backendProcess.kill('SIGKILL'); } catch {}
+    }
+    backendProcess = null;
+  }
+
+  // Ensure no orphaned aegis_backend process lingers on Windows
+  if (process.platform === 'win32') {
+    try {
+      const { execSync } = require('child_process');
+      execSync('taskkill /F /IM aegis_backend.exe 2>nul');
+    } catch {}
+  }
+}
+
 app.on('before-quit', () => {
   isQuitting = true;
   saveWindowState();
+  killBackendProcess();
 });
 
 app.on('window-all-closed', () => {
   // On macOS, standard behavior is to keep app running until Cmd+Q
   if (process.platform !== 'darwin') {
     isQuitting = true;
+    killBackendProcess();
     app.quit();
   }
 });
 
 app.on('quit', () => {
-  // Gracefully kill the backend process
-  if (backendProcess && !backendProcess.killed) {
-    console.log('[Aegis Desktop] Killing backend process...');
-    backendProcess.kill('SIGTERM');
-    // Force kill after 3s if needed
-    setTimeout(() => {
-      if (backendProcess && !backendProcess.killed) {
-        backendProcess.kill('SIGKILL');
-      }
-    }, 3000);
-  }
+  killBackendProcess();
 });
+
+process.on('exit', () => {
+  killBackendProcess();
+});
+
+process.on('SIGINT', () => {
+  killBackendProcess();
+  process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+  killBackendProcess();
+  process.exit(0);
+});
+

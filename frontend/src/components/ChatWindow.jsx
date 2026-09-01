@@ -308,7 +308,7 @@ export default function ChatWindow({
       <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6 z-10">
         {messages.length === 0 ? (
           /* Empty / Welcome State with 3D Neural Human Brain Hero */
-          <div className="min-h-full flex flex-col items-center justify-center text-center max-w-2xl mx-auto px-2 select-text py-2 sm:py-4">
+          <div className="w-full flex flex-col items-center justify-start text-center max-w-2xl mx-auto px-2 select-text pt-4 pb-8">
             
             {/* 3D Anatomical Human Brain Hero (8,500 particles, gyri/sulci folding, synaptic firings & mouse parallax) */}
             <div className="relative w-full h-44 sm:h-52 md:h-56 mb-2 flex items-center justify-center pointer-events-auto">

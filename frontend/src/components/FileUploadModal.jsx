@@ -142,8 +142,9 @@ export default function FileUploadModal({ isOpen, onClose, onIngestSuccess, inde
                 <FileCheck className="w-4 h-4 text-emerald-400" />
                 <span>Successfully Indexed: {uploadSuccess.filename}</span>
               </div>
-              <div className="flex gap-4 text-[10px] text-zinc-400 font-mono pt-1">
-                <span>Chunks: <b className="text-white">{uploadSuccess.total_chunks}</b></span>
+          <div className="flex gap-4 text-[10px] text-zinc-400 font-mono pt-1">
+                <span>Chunks: <b className="text-white">{uploadSuccess.total_chunks_indexed ?? uploadSuccess.total_chunks ?? 0}</b></span>
+                <span>Pages: <b className="text-white">{uploadSuccess.total_pages ?? 1}</b></span>
                 <span>Size: <b className="text-white">{uploadSuccess.file_size_kb} KB</b></span>
               </div>
             </div>

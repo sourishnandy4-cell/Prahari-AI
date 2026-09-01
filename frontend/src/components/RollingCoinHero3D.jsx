@@ -276,7 +276,7 @@ export default function RollingCoinHero3D({ className = '' }) {
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
 
     // ── 8. Physics & Rolling Kinematics Animation Loop ────────────────────────
-    let clock = new THREE.Clock();
+    const startTime = performance.now();
     let accumulatedRollAngle = 0;
     let prevTheta = 0;
 
@@ -286,7 +286,7 @@ export default function RollingCoinHero3D({ className = '' }) {
 
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
-      const elapsedTime = clock.getElapsedTime();
+      const elapsedTime = (performance.now() - startTime) / 1000;
 
       // Smooth camera mouse parallax lerp
       mouse.x += (mouse.targetX - mouse.x) * 0.05;

@@ -9,11 +9,10 @@ import { useIsMobile } from './hooks/useMediaQuery';
 import { useSwipeGesture } from './hooks/useSwipeGesture';
 
 // ── API base URL: auto-detects Electron file:// protocol, mobile LAN, and web proxy
+const _isFileProt = typeof window !== 'undefined' && (window.location.protocol === 'file:' || !window.location.host);
 const API_BASE = (
-  import.meta.env.VITE_API_BASE_URL ||
-  (typeof window !== 'undefined' && (window.location.protocol === 'file:' || !window.location.host)
-    ? 'http://127.0.0.1:8000'
-    : '')
+  import.meta.env.VITE_API_BASE_URL
+  || (_isFileProt ? 'http://127.0.0.1:8000' : '')
 ).replace(/\/$/, '');
 
 /** Build API url: works seamlessly across Electron (file://), mobile APK, and Vite proxy */

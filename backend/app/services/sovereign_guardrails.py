@@ -75,7 +75,7 @@ class SovereignGuardrails:
         audit_hash = self.generate_audit_hash(query, answer)
         badge = (
             f"\n\n---\n"
-            f"> 🛡️ **Classification:** SOVEREIGN OPERATIONAL DIRECTIVE &bull; **Evidence Hash:** `{audit_hash}` &bull; **Mode:** 100% Offline / Air-Gapped\n"
+            f"> 🛡️ **Classification:** SOVEREIGN OPERATIONAL DIRECTIVE • **Evidence Hash:** `{audit_hash}` • **Mode:** 100% Offline / Air-Gapped\n"
         )
         return answer + badge
 
