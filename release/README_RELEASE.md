@@ -1,4 +1,4 @@
-# 🛡️ PRAHARI AI (v2.5.0 Release Distribution)
+# 🛡️ PRAHARI AI (v2.6.0 Release Distribution)
 
 Sovereign On-Premise Industrial Safety & Agentic RAG Web/Mobile/Desktop Suite
 Engineered for High-Reliability Operations at Mangalore Refinery and Petrochemicals Limited (MRPL).
@@ -8,7 +8,7 @@ Engineered for High-Reliability Operations at Mangalore Refinery and Petrochemic
 ## 📦 Release Artifacts
 
 ### 🖥️ Windows Desktop
-1. **`PRAHARI-AI-Setup-v2.5.0.exe`**
+1. **`PRAHARI-AI-Setup-v2.6.0.exe`**
    - Full Windows NSIS Installer with auto-process termination hooks (`customInit`).
    - Seamless installation over previous running versions without manual closing.
    - Bundles the compiled standalone backend executable (`aegis_backend.exe`).
@@ -16,14 +16,14 @@ Engineered for High-Reliability Operations at Mangalore Refinery and Petrochemic
    - Auto-starts the background FastAPI engine silently on boot.
    - Features 60–120 FPS 3D Neural Human Brain Hero + ErrorBoundary resilience.
 
-2. **`PRAHARI-AI-Portable-v2.5.0.exe`**
+2. **`PRAHARI-AI-Portable-v2.6.0.exe`**
    - Zero-install portable edition.
    - Simply double-click to run on any Windows 10/11 64-bit machine.
 
 ---
 
 ### 📱 Android Mobile APK
-1. **`PRAHARI-AI-v2.5.0.apk`**
+1. **`PRAHARI-AI-v2.6.0.apk`**
    - Android Application Package (built via Capacitor 7).
    - Compatible with Android 8.0+ (API 26 to API 34).
    - Supports 100% offline LAN operation connected to your PC.
@@ -31,11 +31,11 @@ Engineered for High-Reliability Operations at Mangalore Refinery and Petrochemic
 
 #### 📲 How to Install APK on Phone:
 1. **Method A (Direct Transfer)**:
-   - Copy `PRAHARI-AI-v2.5.0.apk` to your phone via USB cable, Google Drive, or local share.
+   - Copy `PRAHARI-AI-v2.6.0.apk` to your phone via USB cable, Google Drive, or local share.
    - Tap the `.apk` file on your phone and allow *"Install from Unknown Sources"* if prompted.
 2. **Method B (ADB via USB)**:
    ```bash
-   adb install PRAHARI-AI-v2.5.0.apk
+   adb install PRAHARI-AI-v2.6.0.apk
    ```
 
 #### 🌐 Connecting Mobile App to your Local PC Backend:
