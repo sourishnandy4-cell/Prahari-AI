@@ -471,7 +471,7 @@ export default function ChatWindow({
                   e.target.style.height = 'auto';
                   e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
                 }}
-                className="w-full bg-transparent px-2 py-2 text-zinc-100 placeholder-zinc-500 text-sm focus:outline-none font-sans leading-relaxed"
+                className="w-full bg-transparent px-2 py-2 text-zinc-100 placeholder-zinc-500 text-sm focus:outline-none font-sans leading-relaxed select-text cursor-text"
               />
             ) : (
               <input
@@ -483,7 +483,7 @@ export default function ChatWindow({
                 onPaste={handlePaste}
                 placeholder="Ask a safety question or attach pictures/docs to analyze..."
                 disabled={isActive}
-                className="w-full bg-transparent px-2 py-2 text-zinc-100 placeholder-zinc-500 text-sm focus:outline-none font-sans"
+                className="w-full bg-transparent px-2 py-2 text-zinc-100 placeholder-zinc-500 text-sm focus:outline-none font-sans select-text cursor-text"
               />
             )}
 
