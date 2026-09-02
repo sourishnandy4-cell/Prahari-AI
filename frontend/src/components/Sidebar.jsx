@@ -325,9 +325,9 @@ export default function Sidebar({
             <RotateCcw className="w-3 h-3" />
             <span>Replay Intro</span>
           </button>
-          <span className="text-[10px] text-zinc-500 font-mono">
-            MRPL v2.7.0
-          </span>
+          <span className="text-[10px] text-slate-500 font-mono tracking-wider">
+          MRPL v2.7.1 • Sovereign AI
+        </span>
         </div>
       </div>
     </aside>
