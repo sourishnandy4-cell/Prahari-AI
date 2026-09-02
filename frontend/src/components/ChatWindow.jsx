@@ -259,10 +259,6 @@ export default function ChatWindow({
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-xs text-zinc-200 font-medium shadow-sm">
             <Brain className="w-3.5 h-3.5 text-cyan-400" />
             <span className="font-semibold text-white">PRAHARI AI</span>
-            <span className="text-[10px] text-emerald-400 font-mono flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
-              100% Offline
-            </span>
           </div>
         </div>
 
@@ -511,7 +507,7 @@ export default function ChatWindow({
           </div>
 
           <p className="text-[10px] text-zinc-500 text-center mt-2 font-mono">
-            PRAHARI AI &bull; 100% Sovereign Offline Intelligence &bull; MRPL Refinery
+            PRAHARI AI &bull; Sovereign Industrial Intelligence &bull; MRPL Refinery
           </p>
         </form>
       </footer>
