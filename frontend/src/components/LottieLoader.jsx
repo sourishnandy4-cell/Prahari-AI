@@ -33,7 +33,7 @@ export default function LottieLoader({ text = "Synthesizing response from local 
       
       <div className="flex items-center space-x-2 mt-2.5 text-[10px] text-zinc-500 font-mono">
         <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
-        <span>Local ChromaDB &bull; Llama 3.2</span>
+        <span>Local ChromaDB &bull; Sovereign AI Engine</span>
       </div>
     </motion.div>
   );

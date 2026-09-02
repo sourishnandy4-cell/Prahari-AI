@@ -106,7 +106,7 @@ export default function GetStartedScreen({ onGetStarted }) {
         }}
       >
         <span>Smart India Hackathon 2026</span>
-        <span>Zero Cloud Connection &bull; Local ChromaDB &bull; Llama 3.2</span>
+        <span>Zero Cloud Connection &bull; Local ChromaDB &bull; Sovereign AI Engine</span>
       </footer>
     </motion.div>
   );

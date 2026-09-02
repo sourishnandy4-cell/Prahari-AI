@@ -225,6 +225,7 @@ async function createMainWindow() {
     minWidth: 1024,
     minHeight: 700,
     frame: true,
+    autoHideMenuBar: true,
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     backgroundColor: '#070a12',
     show: false, // show only after backend is ready
@@ -236,6 +237,9 @@ async function createMainWindow() {
       webSecurity: true,
     },
   });
+
+  mainWindow.setMenuBarVisibility(false);
+  mainWindow.removeMenu();
 
   // Load the app: check if dev server is running, otherwise fallback to local dist/index.html
   const distIndexPath = path.join(__dirname, '../dist/index.html');
@@ -413,7 +417,7 @@ function buildAppMenu() {
             type: 'info',
             title: 'About PRAHARI AI',
             message: 'PRAHARI AI — Sovereign Industrial Safety Intelligence',
-            detail: 'Version 2.7.1\nBuilt for MRPL Refinery\n\n100% Offline / Air-Gapped\nPowered by Llama 3.2 + ChromaDB + BM25',
+            detail: 'Version 2.7.2\nBuilt for MRPL Refinery\n\n100% Offline / Air-Gapped\nPowered by Sovereign AI + ChromaDB + BM25',
             buttons: ['OK'],
           }),
         },
@@ -421,7 +425,8 @@ function buildAppMenu() {
     },
   ];
 
-  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+  // Disable native menu bar for clean modern window UI
+  Menu.setApplicationMenu(null);
 }
 
 // ── IPC handlers ──────────────────────────────────────────────────────────────
@@ -431,7 +436,7 @@ ipcMain.handle('check-backend-health', () => checkBackendHealth());
 
 // ── App lifecycle ─────────────────────────────────────────────────────────────
 app.whenReady().then(async () => {
-  buildAppMenu();
+  Menu.setApplicationMenu(null);
   createSplashWindow();
   await startBackend();
 

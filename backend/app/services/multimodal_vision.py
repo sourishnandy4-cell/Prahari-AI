@@ -27,9 +27,9 @@ class MultimodalVisionEngine:
         images = image_metadata or []
 
         # Check if query references diagrams, P&ID, schematics, defect photos, or inspection logs
-        is_pid = any(k in q_lower for k in ["p&id", "pid", "drawing", "schematic", "blueprint", "flowsheet", "piping and instrumentation"])
-        is_defect = any(k in q_lower for k in ["defect", "corrosion", "pitting", "leak", "rust", "crack", "damage", "wear", "weeping", "photo", "inspect this photo", "visual inspection", "equipment photo"])
-        is_checklist = any(k in q_lower for k in ["checklist", "handwritten", "scanned", "operator log", "round sheet", "inspection sheet", "ocr"])
+        is_pid = bool(re.search(r'\b(?:p&id|pid|drawing|schematic|blueprint|flowsheet|piping and instrumentation)\b', q_lower))
+        is_defect = bool(re.search(r'\b(?:defect|corrosion|pitting|leak|rust|crack|damage|wear|weeping|photo|photos|image|picture|visual inspection|equipment photo)\b', q_lower))
+        is_checklist = bool(re.search(r'\b(?:checklist|handwritten|scanned|operator log|round sheet|inspection sheet|ocr)\b', q_lower))
 
         if is_pid:
             return {

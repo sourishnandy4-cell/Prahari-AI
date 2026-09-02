@@ -312,7 +312,7 @@ export default function Sidebar({
             </span>
             <span className="text-zinc-300 font-sans text-xs">Offline Sovereign</span>
           </div>
-          <span className="text-[10px] text-zinc-400">Llama 3.2</span>
+          <span className="text-[10px] text-zinc-400">Sovereign AI</span>
         </div>
 
         {/* Replay Intro Link */}
@@ -326,7 +326,7 @@ export default function Sidebar({
             <span>Replay Intro</span>
           </button>
           <span className="text-[10px] text-slate-500 font-mono tracking-wider">
-          MRPL v2.7.1 • Sovereign AI
+          MRPL v2.7.2 • Sovereign AI
         </span>
         </div>
       </div>

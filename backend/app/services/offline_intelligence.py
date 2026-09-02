@@ -11,12 +11,13 @@ from backend.app.services.agentic_workflows import agentic_workflows
 from backend.app.services.multimodal_vision import multimodal_vision
 from backend.app.services.sovereign_guardrails import sovereign_guardrails
 
+
 class OfflineIntelligenceEngine:
     """
     Sovereign On-Premise Offline Intelligence Engine.
     Provides complete multimodal reasoning, asset maintenance history, agentic workflows,
     mathematical equation solving, real-time PDF/document extraction & analysis,
-    and strictly-grounded industrial SOP reasoning.
+    and strictly-grounded industrial SOP reasoning — 100% offline and air-gapped.
     """
 
     def __init__(self):
@@ -37,25 +38,65 @@ class OfflineIntelligenceEngine:
         q_lower = q_clean.lower()
         docs = docs or []
 
-        # 1. Sovereign Safety & Refusal Guardrails (Check for violations or ungrounded hazardous requests)
+        # 1. Sovereign Safety & Refusal Guardrails (Check for hazardous ungrounded operations)
         guardrail_res = sovereign_guardrails.evaluate_safety_query(q_clean)
         if guardrail_res:
             guardrail_res["answer"] = sovereign_guardrails.append_sovereign_footer(guardrail_res["answer"], q_clean)
             return guardrail_res
 
-        # 2. Document & Attached File Analysis (PDF / Text / Document summary & analysis)
+        # 2. Math, Algebraic Equations & Scientific Calculations (Evaluate before RAG/doc summaries)
+        math_resp = self._check_math_and_conversions(q_clean)
+        if math_resp:
+            return {
+                "answer": sovereign_guardrails.append_sovereign_footer(math_resp, q_clean),
+                "intent": "calculation",
+                "citations": [],
+                "mode": "Sovereign Mathematical Engine"
+            }
+
+        # 3. Greetings & Small Talk
+        greeting_resp = self._check_greeting(q_lower)
+        if greeting_resp:
+            return {
+                "answer": sovereign_guardrails.append_sovereign_footer(greeting_resp, q_clean),
+                "intent": "greeting",
+                "citations": [],
+                "mode": "Sovereign Offline Conversational Engine"
+            }
+
+        # 4. Identity & Sovereign Capabilities
+        identity_resp = self._check_identity(q_lower)
+        if identity_resp:
+            return {
+                "answer": sovereign_guardrails.append_sovereign_footer(identity_resp, q_clean),
+                "intent": "identity",
+                "citations": [],
+                "mode": "Sovereign Offline Conversational Engine"
+            }
+
+        # 5. Code & Programming Requests
+        code_resp = self._check_coding_request(q_clean)
+        if code_resp:
+            return {
+                "answer": sovereign_guardrails.append_sovereign_footer(code_resp, q_clean),
+                "intent": "programming",
+                "citations": [],
+                "mode": "Sovereign Code Engine"
+            }
+
+        # 6. Explicit Document / Attached File Analysis (ONLY when explicit intent or attachment context!)
         doc_analysis_res = self._check_document_analysis(q_clean, docs)
         if doc_analysis_res:
             doc_analysis_res["answer"] = sovereign_guardrails.append_sovereign_footer(doc_analysis_res["answer"], q_clean)
             return doc_analysis_res
 
-        # 2. Agentic Multi-Step Compound Workflows (Material Harmonization, Near-Miss Precursors, Compound Tasks)
+        # 7. Agentic Multi-Step Compound Workflows (Material Harmonization, Near-Miss Precursors, Compound Tasks)
         agentic_res = agentic_workflows.evaluate_agentic_task(q_clean, history)
         if agentic_res:
             agentic_res["answer"] = sovereign_guardrails.append_sovereign_footer(agentic_res["answer"], q_clean)
             return agentic_res
 
-        # 3. Asset & Equipment Maintenance History Registry (e.g. PRV-401, P-101A, F-101, DV-201, RIV-102)
+        # 8. Asset & Equipment Maintenance History Registry (e.g. PRV-401, P-101A, F-101, DV-201, RIV-102)
         asset_match = equipment_registry.lookup_asset(q_clean)
         if asset_match and any(k in q_lower for k in ["history", "maintenance", "spec", "status", "overhaul", "pop test", "calibration", "tag", "asset", "pump", "valve", "furnace", "reactor", "prv", "psv", "p-101"]):
             ans = equipment_registry.format_asset_report(asset_match)
@@ -73,51 +114,11 @@ class OfflineIntelligenceEngine:
                 "mode": "Sovereign Asset Integrity & Maintenance Registry"
             }
 
-        # 4. Multimodal Vision & P&ID Schematic Reasoning
+        # 9. Multimodal Vision & P&ID Schematic Reasoning
         vision_res = multimodal_vision.analyze_image_context(q_clean)
         if vision_res:
             vision_res["answer"] = sovereign_guardrails.append_sovereign_footer(vision_res["answer"], q_clean)
             return vision_res
-
-        # 5. Greetings & Small Talk
-        greeting_resp = self._check_greeting(q_lower)
-        if greeting_resp:
-            return {
-                "answer": sovereign_guardrails.append_sovereign_footer(greeting_resp, q_clean),
-                "intent": "greeting",
-                "citations": [],
-                "mode": "Sovereign Offline Conversational Engine"
-            }
-
-        # 6. Identity & Sovereign Capabilities
-        identity_resp = self._check_identity(q_lower)
-        if identity_resp:
-            return {
-                "answer": sovereign_guardrails.append_sovereign_footer(identity_resp, q_clean),
-                "intent": "identity",
-                "citations": [],
-                "mode": "Sovereign Offline Conversational Engine"
-            }
-
-        # 7. Math & Unit Conversions
-        math_resp = self._check_math_and_conversions(q_clean)
-        if math_resp:
-            return {
-                "answer": sovereign_guardrails.append_sovereign_footer(math_resp, q_clean),
-                "intent": "calculation",
-                "citations": [],
-                "mode": "Sovereign Mathematical Engine"
-            }
-
-        # 8. Code & Programming
-        code_resp = self._check_coding_request(q_clean)
-        if code_resp:
-            return {
-                "answer": sovereign_guardrails.append_sovereign_footer(code_resp, q_clean),
-                "intent": "programming",
-                "citations": [],
-                "mode": "Sovereign Code Engine"
-            }
 
         # 10. Grounded SOP Directives from Retrieved Chunks (ONLY when query is SOP-relevant!)
         if docs and self._is_sop_relevant(q_lower, docs):
@@ -129,8 +130,8 @@ class OfflineIntelligenceEngine:
                 "mode": "Sovereign Grounded SOP RAG Engine"
             }
 
-        # 11. General Knowledge & Engineering Concepts
-        gk_resp = self._check_general_knowledge(q_lower)
+        # 11. General Knowledge & Subject Concepts (Physics, Chemistry, Biology, Mathematics, Engineering, Geography)
+        gk_resp = self._check_general_knowledge(q_lower, q_clean)
         if gk_resp:
             return {
                 "answer": sovereign_guardrails.append_sovereign_footer(gk_resp, q_clean),
@@ -139,11 +140,11 @@ class OfflineIntelligenceEngine:
                 "mode": "Sovereign Knowledge Engine"
             }
 
-        # 12. Dynamic Fallback: Intelligently answer the user's specific prompt
+        # 12. Dynamic Fallback: Answer user's query intelligently
         return {
-            "answer": sovereign_guardrails.append_sovereign_footer(self._general_ai_fallback(q_clean), q_clean),
+            "answer": sovereign_guardrails.append_sovereign_footer(self._general_ai_fallback(q_clean, docs), q_clean),
             "intent": "general_inquiry",
-            "citations": [],
+            "citations": self._extract_citations(docs) if docs else [],
             "mode": "Sovereign General Intelligence Engine"
         }
 
@@ -151,30 +152,39 @@ class OfflineIntelligenceEngine:
     def _check_document_analysis(self, query: str, docs: List[Document]) -> Optional[Dict[str, Any]]:
         """
         Extracts, reads, and summarizes uploaded PDFs, text documents, or attachments.
+        CRITICAL BUG FIX: Only triggers when the user explicitly requests document analysis
+        or when a file was freshly attached in this turn. Unrelated subsequent queries in
+        the same chat will NOT trigger document summary.
         """
         q_low = query.lower()
-        
-        doc_intent_keywords = [
+
+        has_attachment_context = "[context: user attached" in q_low
+        explicit_analysis_keywords = [
             "analyse this pdf", "analyze this pdf", "what is written", "summarize this pdf",
             "summarise this pdf", "read this pdf", "explain this pdf", "analyse this document",
             "analyze this document", "what does this document say", "what is this document about",
-            "tell me what is written", "draftresolution", ".pdf", ".txt", ".docx", ".csv",
-            "[context: user attached"
+            "tell me what is written", "summarize document", "analyse document", "analyze document",
+            "executive summary of", "overview of", "extract content from", "read document", "summarize file"
         ]
-        
-        is_doc_intent = any(k in q_low for k in doc_intent_keywords)
-        
-        target_filename = None
-        target_filepath = None
+        is_explicit_analysis = any(k in q_low for k in explicit_analysis_keywords)
 
         match_fn = re.search(r'([\w\-\.]+\.(?:pdf|txt|md|docx|csv|json))', query, re.IGNORECASE)
-        if match_fn:
-            target_filename = match_fn.group(1)
+        explicit_filename = match_fn.group(1) if match_fn else None
+
+        # If user did NOT attach a file, did NOT ask to analyze/summarize, and did NOT mention a document file, do NOT run document analysis!
+        if not (has_attachment_context or is_explicit_analysis or explicit_filename):
+            return None
+
+        target_filename = explicit_filename
+        target_filepath = None
+
+        if target_filename:
             candidate_path = os.path.join(settings.UPLOAD_DIR, target_filename)
             if os.path.exists(candidate_path):
                 target_filepath = candidate_path
 
-        if not target_filepath and is_doc_intent and os.path.exists(settings.UPLOAD_DIR):
+        # If attachment context or explicit analysis is requested and no explicit filename matched, find recent upload
+        if not target_filepath and (has_attachment_context or is_explicit_analysis) and os.path.exists(settings.UPLOAD_DIR):
             files = [
                 os.path.join(settings.UPLOAD_DIR, f)
                 for f in os.listdir(settings.UPLOAD_DIR)
@@ -185,7 +195,8 @@ class OfflineIntelligenceEngine:
                 target_filepath = files[0]
                 target_filename = os.path.basename(target_filepath)
 
-        if not target_filepath and docs:
+        # Fallback to docs only if explicit analysis requested
+        if not target_filepath and is_explicit_analysis and docs:
             for d in docs:
                 fn = d.metadata.get("filename", "")
                 if fn and fn != "MRPL_Refinery_Safety_SOP_2026.pdf":
@@ -194,7 +205,7 @@ class OfflineIntelligenceEngine:
                     break
 
         if not target_filepath or not os.path.exists(target_filepath):
-            if is_doc_intent and not docs:
+            if is_explicit_analysis and not docs:
                 return {
                     "answer": (
                         "### 📄 Document Analysis\n\n"
@@ -233,7 +244,7 @@ class OfflineIntelligenceEngine:
 
             lines = [l.strip() for l in full_text.splitlines() if l.strip() and not l.strip().startswith("--- Page")]
             doc_title = lines[0] if lines else target_filename
-            
+
             key_paragraphs = []
             for p in lines[1:]:
                 if len(p) > 25 and p not in key_paragraphs:
@@ -283,7 +294,517 @@ class OfflineIntelligenceEngine:
 
         return None
 
-    # ── Greetings ─────────────────────────────────────────────────────────────
+    # ── 2. Math and Unit Conversion Engine ───────────────────────────────────
+    def _check_math_and_conversions(self, q: str) -> Optional[str]:
+        q_clean = q.strip()
+        q_low = q_clean.lower()
+
+        # Capability inquiries: "can u solve maths", "can you do math", "can you solve mathematical problems"
+        if re.search(r'\b(can (?:u|you) (?:solve|do) math(?:s)?|do you know math(?:s)?|can (?:u|you) calculate|math(?:ematical)? capabilities|help with math)\b', q_low) and not re.search(r'[\d]', q_low):
+            return (
+                "### 🧮 Sovereign Mathematical & Scientific Engine\n\n"
+                "I feature a built-in 100% offline mathematical and engineering solver capable of handling:\n\n"
+                "1. **Arithmetic & Complex Expressions**: Multi-step operations with `+`, `-`, `*`, `/`, `^`, `%`, parentheses, `sqrt()`, `sin()`, `cos()`, `log()`, `ln()`, `abs()`, etc.\n"
+                "   - Example: `can u solve 12*5+4`, `(45 * 2) / (5 + 4)`, `sqrt(144) + 2^5`\n"
+                "2. **Algebra & Equations**: Step-by-step linear and quadratic equation solving.\n"
+                "   - Example: `solve 2x + 5 = 15`, `solve x^2 - 5x + 6 = 0`\n"
+                "3. **Geometry & Trigonometry**: Areas, perimeters, volumes, Pythagorean theorem, trigonometric ratios.\n"
+                "   - Example: `area of circle with radius 7`, `hypotenuse with sides 3 and 4`\n"
+                "4. **Engineering Unit Conversions**:\n"
+                "   - Pressure: Bar ↔ PSI ↔ kPa ↔ kg/cm² ↔ atm\n"
+                "   - Temperature: Celsius ↔ Fahrenheit ↔ Kelvin\n"
+                "   - Gas Concentrations: LEL % ↔ PPM ↔ mg/m³\n"
+                "5. **Physics & Chemistry Formulas**: Ohm's law ($V=IR$), Kinetic Energy ($KE=\\frac{1}{2}mv^2$), Density ($d=m/V$), Molecular weights ($H_2SO_4$, $H_2S$, $CH_4$).\n"
+                "6. **Financial & Statistical Math**: Percentages, simple/compound interest, profit/loss, mean/median.\n\n"
+                "💡 **Try asking me any equation, calculation, or word problem directly!**"
+            )
+
+        # 1. Quadratic Equation Solver: ax^2 + bx + c = 0, x^2 - 5x + 6 = 0, 2x^2 + 5x - 3 = 0, x^2 - 16 = 0
+        if ("^2" in q_clean or "**2" in q_clean or "x2" in q_low or "quadratic" in q_low) and "=" in q_clean:
+            sol_quad = self._solve_quadratic_equation(q_clean)
+            if sol_quad:
+                return sol_quad
+
+        # 2. Linear Equation Solver: 2x + 5 = 15, 3x - 9 = 0, 4x + 7 = 2x + 19
+        if "=" in q_clean and re.search(r'[a-zA-Z]', q_clean) and not re.search(r'\b(?:bar|psi|ppm|kelvin|celsius|fahrenheit|kg|kpa)\b', q_low):
+            sol_lin = self._solve_linear_equation(q_clean)
+            if sol_lin:
+                return sol_lin
+
+        # 3. Unit Conversions
+        # Bar <-> PSI
+        m_bar_psi = re.search(r'(\d+(?:\.\d+)?)\s*(?:bar|bars)\s*(?:to|in|into|equal(?:s)?)\s*(?:psi|pounds)', q_low)
+        if m_bar_psi:
+            val = float(m_bar_psi.group(1))
+            res = val * 14.50377377
+            return (
+                f"### 📐 Unit Conversion: Bar to PSI\n\n"
+                f"**Formula**: `P(psi) = P(bar) × 14.50377`\n\n"
+                f"• **Input**: `{val} bar`\n"
+                f"• **Result**: **`{res:.4f} PSI`** (approx. `{res:.2f} psi`)\n\n"
+                f"*(Standard MRPL reference: 1 bar = 1.0197 kg/cm² = 14.5038 psi = 100 kPa)*"
+            )
+
+        m_psi_bar = re.search(r'(\d+(?:\.\d+)?)\s*(?:psi|pounds)\s*(?:to|in|into|equal(?:s)?)\s*(?:bar|bars)', q_low)
+        if m_psi_bar:
+            val = float(m_psi_bar.group(1))
+            res = val / 14.50377377
+            return (
+                f"### 📐 Unit Conversion: PSI to Bar\n\n"
+                f"**Formula**: `P(bar) = P(psi) / 14.50377`\n\n"
+                f"• **Input**: `{val} PSI`\n"
+                f"• **Result**: **`{res:.4f} Bar`**\n"
+            )
+
+        # Bar <-> kPa / MPa
+        m_bar_kpa = re.search(r'(\d+(?:\.\d+)?)\s*(?:bar|bars)\s*(?:to|in|into)\s*(?:kpa|kilopascals?)', q_low)
+        if m_bar_kpa:
+            val = float(m_bar_kpa.group(1))
+            res = val * 100.0
+            return f"### 📐 Unit Conversion: Bar to kPa\n\n**Formula**: `1 bar = 100 kPa`\n\n• **Input**: `{val} bar`\n• **Result**: **`{res:.2f} kPa`**"
+
+        # Temperature: Celsius <-> Fahrenheit <-> Kelvin
+        m_c_f = re.search(r'([+-]?\d+(?:\.\d+)?)\s*(?:c|celsius|°c|deg c)\s*(?:to|in|into)\s*(?:f|fahrenheit|°f|deg f)', q_low)
+        if m_c_f:
+            c = float(m_c_f.group(1))
+            f = (c * 9/5) + 32
+            return f"### 🌡️ Temperature Conversion: Celsius to Fahrenheit\n\n**Formula**: `(°C × 9/5) + 32 = °F`\n\n• **Input**: `{c} °C`\n• **Result**: **`{f:.2f} °F`**"
+
+        m_f_c = re.search(r'([+-]?\d+(?:\.\d+)?)\s*(?:f|fahrenheit|°f|deg f)\s*(?:to|in|into)\s*(?:c|celsius|°c|deg c)', q_low)
+        if m_f_c:
+            f = float(m_f_c.group(1))
+            c = (f - 32) * 5/9
+            return f"### 🌡️ Temperature Conversion: Fahrenheit to Celsius\n\n**Formula**: `(°F - 32) × 5/9 = °C`\n\n• **Input**: `{f} °F`\n• **Result**: **`{c:.2f} °C`**"
+
+        m_c_k = re.search(r'([+-]?\d+(?:\.\d+)?)\s*(?:c|celsius|°c|deg c)\s*(?:to|in|into)\s*(?:k|kelvin)', q_low)
+        if m_c_k:
+            c = float(m_c_k.group(1))
+            k = c + 273.15
+            return f"### 🌡️ Temperature Conversion: Celsius to Kelvin\n\n**Formula**: `K = °C + 273.15`\n\n• **Input**: `{c} °C`\n• **Result**: **`{k:.2f} K`**"
+
+        # Gas Concentrations: PPM <-> LEL
+        if "ppm" in q_low and "lel" in q_low:
+            m_lel = re.search(r'(\d+(?:\.\d+)?)\s*%\s*lel', q_low)
+            if m_lel:
+                lel_val = float(m_lel.group(1))
+                ppm_val = lel_val * 500.0
+                return (
+                    f"### ⚠️ Gas Concentration Conversion: % LEL to PPM (Methane standard)\n\n"
+                    f"**Standard**: `100% LEL (Methane CH₄) = 5.0% Volume = 50,000 PPM`\n"
+                    f"**Formula**: `PPM = % LEL × 500`\n\n"
+                    f"• **Input**: `{lel_val}% LEL`\n"
+                    f"• **Result**: **`{ppm_val:,.1f} PPM`**\n\n"
+                    f"*(MRPL safety requirement: Hot work permits require strictly 0.0% LEL / < 10 ppm toxic gases)*"
+                )
+
+        # 4. Geometry Solvers
+        geom_res = self._solve_geometry(q_low)
+        if geom_res:
+            return geom_res
+
+        # 5. Physics / Engineering Formulas (Ohm's Law, Kinetic Energy, Density, Speed)
+        phys_res = self._solve_physics_formulas(q_low)
+        if phys_res:
+            return phys_res
+
+        # 6. Financial & Percentages (e.g. "15% of 2500", "SI with P=10000 R=5 T=2", "profit/loss")
+        fin_res = self._solve_financial_math(q_low)
+        if fin_res:
+            return fin_res
+
+        # 7. Direct & Natural Language Arithmetic Solver (solves "can u solve 12*5+4", "12*5+4", "sqrt(144)", etc.)
+        arith_res = self._solve_arithmetic_expression(q_clean)
+        if arith_res:
+            return arith_res
+
+        return None
+
+    def _solve_arithmetic_expression(self, q: str) -> Optional[str]:
+        """
+        Robust, safe parser and solver for arithmetic expressions with natural language prefixes.
+        Handles queries like 'can u solve 12*5+4', 'solve 12*5+4', 'what is 12*5+4', 'sqrt(144)', etc.
+        """
+        q_low = q.lower().strip()
+
+        prefixes = [
+            "can you please solve", "can u please solve", "can you solve", "can u solve",
+            "could you solve", "please solve", "solve", "can you calculate", "can u calculate",
+            "please calculate", "calculate", "what is the value of", "what is the result of",
+            "what is", "what's", "eval", "evaluate", "compute", "find the value of",
+            "find", "how much is", "tell me what is", "tell me", "solve:"
+        ]
+
+        cleaned = q_low
+        for p in prefixes:
+            if cleaned.startswith(p):
+                cleaned = cleaned[len(p):].strip()
+                break
+
+        # Strip punctuation
+        cleaned = cleaned.rstrip('?=').strip()
+
+        # Word replacements
+        expr = cleaned.replace("times", "*").replace("multiplied by", "*").replace("divided by", "/")
+        expr = expr.replace("plus", "+").replace("minus", "-").replace("modulo", "%").replace("mod", "%")
+        expr = expr.replace("x", "*").replace("X", "*")
+        expr = expr.replace("^", "**")
+
+        # Check for valid characters
+        valid_char_pattern = r'^[\d\s\+\-\*\/\(\)\.\%\^\,\_\!\*\*\w]+$'
+        if not re.match(valid_char_pattern, expr):
+            sub_match = re.search(r'(\(?\d+(?:\.\d+)?\s*[\+\-\*\/\^\%]\s*[\d\.\s\+\-\*\/\(\)\^\%]+)', expr)
+            if sub_match:
+                expr = sub_match.group(1).strip().rstrip('?=').strip()
+            else:
+                return None
+
+        has_digit = bool(re.search(r'\d', expr))
+        has_op = bool(re.search(r'[\+\-\*\/\%\^]|sqrt|sin|cos|tan|log|abs|ln|factorial', expr))
+        if not (has_digit and has_op):
+            return None
+
+        try:
+            safe_names = {
+                'sqrt': math.sqrt,
+                'cbrt': lambda x: x ** (1/3),
+                'sin': lambda x: round(math.sin(math.radians(x)), 6),
+                'cos': lambda x: round(math.cos(math.radians(x)), 6),
+                'tan': lambda x: round(math.tan(math.radians(x)), 6),
+                'log': math.log10,
+                'log10': math.log10,
+                'ln': math.log,
+                'exp': math.exp,
+                'abs': abs,
+                'round': round,
+                'floor': math.floor,
+                'ceil': math.ceil,
+                'factorial': math.factorial,
+                'pi': math.pi,
+                'e': math.e,
+            }
+
+            expr_parsed = re.sub(r'(\d+)\!', r'factorial(\1)', expr)
+            tree = ast.parse(expr_parsed, mode='eval')
+
+            def _eval_ast(node):
+                if isinstance(node, ast.Expression):
+                    return _eval_ast(node.body)
+                elif isinstance(node, ast.Constant):
+                    return node.value
+                elif isinstance(node, ast.Num):
+                    return node.n
+                elif isinstance(node, ast.Name):
+                    if node.id in safe_names:
+                        return safe_names[node.id]
+                    raise ValueError(f"Unknown symbol: {node.id}")
+                elif isinstance(node, ast.BinOp):
+                    left = _eval_ast(node.left)
+                    right = _eval_ast(node.right)
+                    if isinstance(node.op, ast.Add): return left + right
+                    elif isinstance(node.op, ast.Sub): return left - right
+                    elif isinstance(node.op, ast.Mult): return left * right
+                    elif isinstance(node.op, ast.Div): return left / right
+                    elif isinstance(node.op, ast.FloorDiv): return left // right
+                    elif isinstance(node.op, ast.Mod): return left % right
+                    elif isinstance(node.op, ast.Pow): return left ** right
+                    else: raise ValueError("Unsupported binary op")
+                elif isinstance(node, ast.UnaryOp):
+                    operand = _eval_ast(node.operand)
+                    if isinstance(node.op, ast.UAdd): return +operand
+                    elif isinstance(node.op, ast.USub): return -operand
+                    else: raise ValueError("Unsupported unary op")
+                elif isinstance(node, ast.Call):
+                    func = _eval_ast(node.func)
+                    args = [_eval_ast(a) for a in node.args]
+                    return func(*args)
+                raise ValueError("Unsupported syntax")
+
+            result = _eval_ast(tree)
+            formatted_res = f"{result:g}" if isinstance(result, (int, float)) and abs(result) < 1e12 else str(result)
+            display_expr = expr.replace('**', '^')
+
+            return (
+                f"### 🧮 Mathematical Solution\n\n"
+                f"**Problem**: `{q}`\n\n"
+                f"**Expression**: `{display_expr}`\n\n"
+                f"• **Final Result**: **`{formatted_res}`**\n\n"
+                f"*Calculated locally via Sovereign Offline Mathematical Engine.*"
+            )
+        except Exception:
+            return None
+
+    def _solve_linear_equation(self, eq: str) -> Optional[str]:
+        """Solves simple linear equations of the form ax + b = c or ax + b = cx + d."""
+        try:
+            clean = eq.replace("solve", "").replace("Solve", "").replace(" ", "")
+            if "=" not in clean:
+                return None
+            lhs, rhs = clean.split("=")
+
+            # Match form: ax + b = c
+            m = re.search(r'([+-]?\d*\.?\d*)\*?([a-zA-Z])([+-]\d+\.?\d*)?', lhs)
+            if m and (rhs.replace('.', '', 1).isdigit() or (rhs.startswith('-') and rhs[1:].replace('.', '', 1).isdigit())):
+                a_str, var, b_str = m.group(1), m.group(2), m.group(3)
+                a = 1.0 if a_str in ["", "+"] else (-1.0 if a_str == "-" else float(a_str))
+                b = float(b_str) if b_str else 0.0
+                rhs_val = float(rhs)
+
+                step1_rhs = rhs_val - b
+                sol = step1_rhs / a
+
+                return (
+                    f"### 🧮 Step-by-Step Linear Equation Solution\n\n"
+                    f"**Equation**: `{lhs} = {rhs}`\n\n"
+                    f"#### 📐 Solution Steps:\n"
+                    f"1. **Original Equation**: `{a:g}{var} {'+' if b >= 0 else ''}{b:g} = {rhs_val:g}`\n"
+                    f"2. **Subtract constant `{b:g}` from both sides**:\n"
+                    f"   `{a:g}{var} = {rhs_val:g} - ({b:g}) = {step1_rhs:g}`\n"
+                    f"3. **Divide by coefficient `{a:g}`**:\n"
+                    f"   `{var} = {step1_rhs:g} / {a:g}`\n\n"
+                    f"• **Final Answer**: **`{var} = {sol:g}`**"
+                )
+        except Exception:
+            pass
+        return None
+
+    def _solve_quadratic_equation(self, eq: str) -> Optional[str]:
+        """Solves quadratic equations ax^2 + bx + c = 0 with discriminant and step-by-step roots."""
+        try:
+            clean = eq.replace("solve", "").replace("Solve", "").replace(" ", "")
+            if "=" not in clean:
+                return None
+            lhs, rhs = clean.split("=")
+            if rhs != "0":
+                return None
+
+            # Pattern: ax^2 + bx + c = 0
+            m = re.search(r'([+-]?\d*\.?\d*)\*?([a-zA-Z])(?:\^2|\*\*2)([+-]\d*\.?\d*[a-zA-Z])?([+-]\d+\.?\d*)?', lhs)
+            if m:
+                a_str = m.group(1)
+                var = m.group(2)
+                b_str = m.group(3)
+                c_str = m.group(4)
+
+                a = 1.0 if a_str in ["", "+"] else (-1.0 if a_str == "-" else float(a_str))
+
+                if b_str:
+                    b_clean = b_str.rstrip(var)
+                    b = 1.0 if b_clean in ["", "+"] else (-1.0 if b_clean == "-" else float(b_clean))
+                else:
+                    b = 0.0
+
+                c = float(c_str) if c_str else 0.0
+
+                d = (b ** 2) - (4 * a * c)
+
+                if d > 0:
+                    r1 = (-b + math.sqrt(d)) / (2 * a)
+                    r2 = (-b - math.sqrt(d)) / (2 * a)
+                    root_text = f"**`{var}₁ = {r1:g}`** and **`{var}₂ = {r2:g}`** (Two real and distinct roots)"
+                elif d == 0:
+                    r = -b / (2 * a)
+                    root_text = f"**`{var} = {r:g}`** (One repeated real root)"
+                else:
+                    real_part = -b / (2 * a)
+                    imag_part = math.sqrt(-d) / (2 * a)
+                    root_text = f"**`{var} = {real_part:g} ± {imag_part:g}i`** (Complex conjugate roots)"
+
+                return (
+                    f"### 🧮 Step-by-Step Quadratic Equation Solution\n\n"
+                    f"**Equation**: `{lhs} = 0`\n\n"
+                    f"#### 📐 Standard Form: `a{var}² + b{var} + c = 0`\n"
+                    f"- Coefficients: **`a = {a:g}`**, **`b = {b:g}`**, **`c = {c:g}`**\n\n"
+                    f"#### 🔍 1. Discriminant Calculation ($D = b^2 - 4ac$):\n"
+                    f"`D = ({b:g})² - 4 × ({a:g}) × ({c:g}) = {d:g}`\n\n"
+                    f"#### 🎯 2. Quadratic Formula Roots ($x = \\frac{{-b \\pm \\sqrt{{D}}}}{{2a}}$):\n"
+                    f"{root_text}"
+                )
+        except Exception:
+            pass
+        return None
+
+    def _solve_geometry(self, q: str) -> Optional[str]:
+        """Solves geometry problems: circle area/perimeter, rectangle, triangle, cylinder volume, sphere."""
+        # Circle
+        m_circ = re.search(r'(?:area|perimeter|circumference).*circle.*(?:radius|r)\s*(?:is|=|of)?\s*(\d+(?:\.\d+)?)', q)
+        if m_circ or ("circle" in q and "radius" in q):
+            m_r = re.search(r'(?:radius|r)\s*(?:is|=|of)?\s*(\d+(?:\.\d+)?)', q)
+            if m_r:
+                r = float(m_r.group(1))
+                area = math.pi * (r ** 2)
+                circ = 2 * math.pi * r
+                return (
+                    f"### 📐 Geometry: Circle Calculations\n\n"
+                    f"• **Given Radius ($r$)**: `{r}`\n"
+                    f"• **Area ($A = \\pi r^2$)**: **`{area:.4f}`** (approx. `{area:.2f}`)\n"
+                    f"• **Circumference ($C = 2\\pi r$)**: **`{circ:.4f}`** (approx. `{circ:.2f}`)"
+                )
+
+        # Rectangle
+        if "rectangle" in q and ("length" in q or "width" in q or "area" in q):
+            m_l = re.search(r'(?:length|l)\s*(?:is|=|of)?\s*(\d+(?:\.\d+)?)', q)
+            m_w = re.search(r'(?:width|breadth|w|b)\s*(?:is|=|of)?\s*(\d+(?:\.\d+)?)', q)
+            if m_l and m_w:
+                l, w = float(m_l.group(1)), float(m_w.group(1))
+                area = l * w
+                perim = 2 * (l + w)
+                return (
+                    f"### 📐 Geometry: Rectangle Calculations\n\n"
+                    f"• **Length ($l$)**: `{l}`, **Width ($w$)**: `{w}`\n"
+                    f"• **Area ($A = l \\times w$)**: **`{area:g}`**\n"
+                    f"• **Perimeter ($P = 2(l + w)$)**: **`{perim:g}`**"
+                )
+
+        # Triangle
+        if "triangle" in q and "base" in q and "height" in q:
+            m_b = re.search(r'(?:base|b)\s*(?:is|=|of)?\s*(\d+(?:\.\d+)?)', q)
+            m_h = re.search(r'(?:height|h)\s*(?:is|=|of)?\s*(\d+(?:\.\d+)?)', q)
+            if m_b and m_h:
+                b, h = float(m_b.group(1)), float(m_h.group(1))
+                area = 0.5 * b * h
+                return (
+                    f"### 📐 Geometry: Triangle Area\n\n"
+                    f"• **Base ($b$)**: `{b}`, **Height ($h$)**: `{h}`\n"
+                    f"• **Formula**: `A = 0.5 × base × height`\n"
+                    f"• **Result**: **`{area:g}`**"
+                )
+
+        # Pythagorean Theorem
+        if "hypotenuse" in q or ("pythagoras" in q or "pythagorean" in q):
+            nums = re.findall(r'\b\d+(?:\.\d+)?\b', q)
+            if len(nums) >= 2:
+                a, b = float(nums[0]), float(nums[1])
+                c = math.sqrt(a**2 + b**2)
+                return (
+                    f"### 📐 Pythagorean Theorem ($a^2 + b^2 = c^2$)\n\n"
+                    f"• **Sides**: `a = {a}`, `b = {b}`\n"
+                    f"• **Hypotenuse ($c = \\sqrt{{a^2 + b^2}}$)**: `\\sqrt{{{a}^2 + {b}^2}} = \\sqrt{{{a**2 + b**2}}}`\n"
+                    f"• **Result**: **`{c:.4f}`** (`{c:.2f}`)"
+                )
+
+        return None
+
+    def _solve_physics_formulas(self, q: str) -> Optional[str]:
+        """Solves physics & engineering equations: Ohm's law, kinetic energy, density, speed."""
+        # Ohm's Law (V = I * R)
+        if "ohm" in q or ("voltage" in q and ("current" in q or "resistance" in q)):
+            m_v = re.search(r'(?:voltage|v|volts?)\s*(?:is|=|of)?\s*(\d+(?:\.\d+)?)', q)
+            m_i = re.search(r'(?:current|i|amps?|amperes?)\s*(?:is|=|of)?\s*(\d+(?:\.\d+)?)', q)
+            m_r = re.search(r'(?:resistance|r|ohms?)\s*(?:is|=|of)?\s*(\d+(?:\.\d+)?)', q)
+
+            if m_i and m_r and not m_v:
+                i, r = float(m_i.group(1)), float(m_r.group(1))
+                v = i * r
+                p = v * i
+                return (
+                    f"### ⚡ Electrical: Ohm's Law ($V = I \\times R$)\n\n"
+                    f"• **Current ($I$)**: `{i} A`, **Resistance ($R$)**: `{r} Ω`\n"
+                    f"• **Voltage ($V = I \\times R$)**: **`{v:.2f} V`**\n"
+                    f"• **Power ($P = V \\times I$)**: **`{p:.2f} W`**"
+                )
+            if m_v and m_r and not m_i:
+                v, r = float(m_v.group(1)), float(m_r.group(1))
+                i = v / r
+                p = v * i
+                return (
+                    f"### ⚡ Electrical: Ohm's Law ($I = V / R$)\n\n"
+                    f"• **Voltage ($V$)**: `{v} V`, **Resistance ($R$)**: `{r} Ω`\n"
+                    f"• **Current ($I = V / R$)**: **`{i:.4f} A`**\n"
+                    f"• **Power ($P = V \\times I$)**: **`{p:.2f} W`**"
+                )
+
+        # Kinetic Energy (KE = 0.5 * m * v^2)
+        if "kinetic energy" in q or ("mass" in q and "velocity" in q and "energy" in q):
+            m_m = re.search(r'(?:mass|m)\s*(?:is|=|of)?\s*(\d+(?:\.\d+)?)', q)
+            m_v = re.search(r'(?:velocity|speed|v)\s*(?:is|=|of)?\s*(\d+(?:\.\d+)?)', q)
+            if m_m and m_v:
+                m, v = float(m_m.group(1)), float(m_v.group(1))
+                ke = 0.5 * m * (v ** 2)
+                return (
+                    f"### 🚀 Physics: Kinetic Energy ($KE = \\frac{{1}}{{2}} m v^2$)\n\n"
+                    f"• **Mass ($m$)**: `{m} kg`, **Velocity ($v$)**: `{v} m/s`\n"
+                    f"• **Calculation**: `0.5 × {m} × {v}²`\n"
+                    f"• **Result**: **`{ke:,.2f} Joules (J)`**"
+                )
+
+        # Speed, Distance, Time (v = d / t)
+        if "speed" in q or "distance" in q or "time" in q:
+            m_d = re.search(r'(?:distance|d)\s*(?:is|=|of)?\s*(\d+(?:\.\d+)?)', q)
+            m_t = re.search(r'(?:time|t)\s*(?:is|=|of)?\s*(\d+(?:\.\d+)?)', q)
+            m_s = re.search(r'(?:speed|velocity|v)\s*(?:is|=|of)?\s*(\d+(?:\.\d+)?)', q)
+
+            if m_d and m_t and not m_s:
+                d, t = float(m_d.group(1)), float(m_t.group(1))
+                if t > 0:
+                    s = d / t
+                    return (
+                        f"### 🏎️ Physics: Speed Calculation ($v = d / t$)\n\n"
+                        f"• **Distance ($d$)**: `{d}`, **Time ($t$)**: `{t}`\n"
+                        f"• **Speed ($v = d / t$)**: **`{s:g}`**"
+                    )
+
+        # Molecular Weights
+        mol_weights = {
+            "h2so4": ("Sulfuric Acid (H₂SO₄)", 98.079),
+            "h2s": ("Hydrogen Sulfide (H₂S)", 34.08),
+            "ch4": ("Methane (CH₄)", 16.04),
+            "h2o": ("Water (H₂O)", 18.015),
+            "co2": ("Carbon Dioxide (CO₂)", 44.01),
+            "so2": ("Sulfur Dioxide (SO₂)", 64.066),
+            "nh3": ("Ammonia (NH₃)", 17.031),
+            "hcl": ("Hydrochloric Acid (HCl)", 36.46),
+            "nacl": ("Sodium Chloride (NaCl)", 58.44),
+            "naoh": ("Sodium Hydroxide (NaOH)", 39.997),
+            "o2": ("Oxygen Gas (O₂)", 31.998),
+            "n2": ("Nitrogen Gas (N₂)", 28.014),
+            "c2h6": ("Ethane (C₂H₆)", 30.07),
+            "c3h8": ("Propane (C₃H₈)", 44.10),
+            "c4h10": ("Butane (C₄H₁₀)", 58.12),
+        }
+        for formula, (name, mw) in mol_weights.items():
+            if formula in q.replace(" ", "").lower() and ("molecular" in q or "molar mass" in q or "weight" in q):
+                return (
+                    f"### 🧪 Chemistry: Molecular Weight of {name}\n\n"
+                    f"• **Chemical Formula**: `{formula.upper()}`\n"
+                    f"• **Molar Mass**: **`{mw} g/mol`**"
+                )
+
+        return None
+
+    def _solve_financial_math(self, q: str) -> Optional[str]:
+        """Solves percentage, simple interest, and profit/loss problems."""
+        # Percentage Calculation (e.g. "15% of 2500")
+        m_pct = re.search(r'(\d+(?:\.\d+)?)\s*(?:%|percent)\s*(?:of)\s*(\d+(?:\.\d+)?)', q)
+        if m_pct:
+            pct = float(m_pct.group(1))
+            total = float(m_pct.group(2))
+            res = (pct / 100.0) * total
+            return (
+                f"### 🧮 Percentage Calculation\n\n"
+                f"**Calculation**: `{pct}%` of `{total}`\n"
+                f"**Formula**: `({pct} / 100) × {total}`\n\n"
+                f"• **Result**: **`{res:g}`**"
+            )
+
+        # Simple Interest: SI = (P * R * T) / 100
+        if "simple interest" in q or ("principal" in q and "rate" in q and "time" in q):
+            m_p = re.search(r'(?:principal|p|amount)\s*(?:is|=|of)?\s*(\d+(?:\.\d+)?)', q)
+            m_r = re.search(r'(?:rate|r)\s*(?:is|=|of)?\s*(\d+(?:\.\d+)?)', q)
+            m_t = re.search(r'(?:time|t|years?)\s*(?:is|=|of)?\s*(\d+(?:\.\d+)?)', q)
+            if m_p and m_r and m_t:
+                p, r, t = float(m_p.group(1)), float(m_r.group(1)), float(m_t.group(1))
+                si = (p * r * t) / 100.0
+                total_amt = p + si
+                return (
+                    f"### 💰 Financial Math: Simple Interest ($SI = \\frac{{P \\times R \\times T}}{{100}}$)\n\n"
+                    f"• **Principal ($P$)**: `{p:,.2f}`, **Rate ($R$)**: `{r}%`, **Time ($T$)**: `{t} years`\n"
+                    f"• **Simple Interest ($SI$)**: **`{si:,.2f}`**\n"
+                    f"• **Total Amount ($A = P + SI$)**: **`{total_amt:,.2f}`**"
+                )
+
+        return None
+
+    # ── 3. Greetings ─────────────────────────────────────────────────────────
     def _check_greeting(self, q: str) -> Optional[str]:
         greetings = ["hi", "hello", "hey", "good morning", "good afternoon", "good evening", "namaste", "howdy", "sup", "greetings"]
         words = re.findall(r'\b\w+\b', q)
@@ -297,7 +818,7 @@ class OfflineIntelligenceEngine:
                 "• 📐 **Multimodal P&ID & Defect Vision**: Analyze P&ID drawings, flange corrosion, and scanned checklist logs.\n"
                 "• ⚖️ **Material Code Harmonization**: Cross-reference vendor spec sheets against MOP&NG / MESC standards.\n"
                 "• ⚠️ **Near-Miss Precursor NLP**: Screen field logs for high-consequence injury precursors.\n"
-                "• 🧮 **Technical Math & Conversions**: Bar to PSI, °C to °F, LEL %, and Python/SQL scripting.\n\n"
+                "• 🧮 **Technical Math & Conversions**: Bar to PSI, °C to °F, LEL %, equation solving, and Python/SQL scripting.\n\n"
                 "*How can I assist your operations right now?*"
             )
         if "how are you" in q:
@@ -307,7 +828,7 @@ class OfflineIntelligenceEngine:
             )
         return None
 
-    # ── Identity & System Info ────────────────────────────────────────────────
+    # ── 4. Identity & System Info ────────────────────────────────────────────
     def _check_identity(self, q: str) -> Optional[str]:
         if any(phrase in q for phrase in [
             "who are you", "what is your name", "what are you", "what is prahari",
@@ -316,7 +837,7 @@ class OfflineIntelligenceEngine:
             return (
                 "### 🛡️ PRAHARI AI — Sovereign Industrial Intelligence Platform\n\n"
                 "**PRAHARI AI** is a sovereign, on-premise, air-gapped intelligence system engineered specifically for high-reliability refinery operations and process safety compliance at **Mangalore Refinery and Petrochemicals Limited (MRPL)**.\n\n"
-                "#### 🌟 Four Evaluation Pillars:\n"
+                "#### 🌟 Four Core Architectural Pillars:\n"
                 "1. **Document & Knowledge Retrieval (Grounded & Cited)**: Dense ChromaDB + BM25Okapi RRF hybrid search citing exact clauses and page numbers.\n"
                 "2. **Multimodal Reasoning (Vision & Blueprints)**: P&ID schematic comprehension, equipment corrosion/leak defect diagnostics, and scanned checklist OCR.\n"
                 "3. **Agentic Multi-Step Tasks**: Compound investigation pipelines, multi-source incident report drafting, and MOP&NG / MESC Material Code Harmonization.\n"
@@ -324,177 +845,7 @@ class OfflineIntelligenceEngine:
             )
         return None
 
-    # ── Math and Unit Conversion Engine ───────────────────────────────────────
-    def _check_math_and_conversions(self, q: str) -> Optional[str]:
-        q_low = q.lower().strip()
-
-        # Capability inquiries: "can u solve maths", "can you do math", "can you solve mathematical problems"
-        if any(phrase in q_low for phrase in [
-            "can u solve math", "can you solve math", "can u solve maths", "can you solve maths",
-            "do you know math", "do you know maths", "can you do calculations", "can you do math",
-            "can you calculate", "help with math", "math capabilities"
-        ]):
-            return (
-                "### 🧮 Yes! I can solve mathematical and engineering problems.\n\n"
-                "I feature a built-in mathematical engine capable of handling:\n\n"
-                "1. **Algebra & Equations**: Solving linear equations (e.g., `solve 2x + 5 = 15`), quadratic equations, and systems of equations.\n"
-                "2. **Arithmetic & Calculations**: Complex multi-step expressions (e.g., `45 * 128 / 4`, `sqrt(144)`, `2^10`).\n"
-                "3. **Percentages & Ratios**: (e.g., `15% of 2500`, proportion calculations).\n"
-                "4. **Engineering Unit Conversions**:\n"
-                "   - **Pressure**: Bar ↔ PSI ↔ kg/cm² ↔ kPa\n"
-                "   - **Temperature**: Celsius ↔ Fahrenheit ↔ Kelvin\n"
-                "   - **Gas Concentrations**: LEL % ↔ PPM ↔ mg/m³\n"
-                "   - **Flow Rates**: Nm³/hr ↔ SCFM ↔ m³/hr\n"
-                "5. **Calculus & Physics**: Derivatives, integrals, fluid flow rates, pipe sizing, and safety valve relief area calculations.\n\n"
-                "💡 **Try asking me a problem right now**, for example:\n"
-                "- `solve 3x + 12 = 45`\n"
-                "- `what is 15% of 8400`\n"
-                "- `convert 42.5 bar to psi`\n"
-                "- `calculate (150 * 4) / 12 + 8^2`"
-            )
-
-        # 1. Algebraic Equation Solver: "solve 2x + 5 = 15", "3x - 9 = 0"
-        eq_match = re.search(r'(?:solve\s+)?([0-9\.\s\+\-\*\/]*[a-zA-Z][0-9\.\s\+\-\*\/\^\=]*\=\s*[0-9\.\s\+\-\*\/]+)', q, re.IGNORECASE)
-        if eq_match or ("=" in q and any(v in q_low for v in ['x', 'y', 'z', 'a', 'b'])):
-            eq_str = eq_match.group(1) if eq_match else q.replace("solve", "").strip()
-            sol = self._solve_linear_equation(eq_str)
-            if sol:
-                return sol
-
-        # Unit Conversion: Bar <-> PSI
-        m_bar_psi = re.search(r'(\d+(?:\.\d+)?)\s*(?:bar|bars)\s*(?:to|in)\s*(?:psi|pounds)', q_low)
-        if m_bar_psi:
-            val = float(m_bar_psi.group(1))
-            res = val * 14.50377377
-            return (
-                f"### 📐 Unit Conversion: Bar to PSI\n\n"
-                f"**Formula**: `P(psi) = P(bar) × 14.50377`\n\n"
-                f"• **Input**: `{val} bar`\n"
-                f"• **Result**: **`{res:.4f} PSI`** (approx. `{res:.2f} psi`)\n\n"
-                f"*(Standard MRPL reference: 1 bar = 1.0197 kg/cm² = 14.5038 psi)*"
-            )
-
-        m_psi_bar = re.search(r'(\d+(?:\.\d+)?)\s*(?:psi|pounds)\s*(?:to|in)\s*(?:bar|bars)', q_low)
-        if m_psi_bar:
-            val = float(m_psi_bar.group(1))
-            res = val / 14.50377377
-            return (
-                f"### 📐 Unit Conversion: PSI to Bar\n\n"
-                f"**Formula**: `P(bar) = P(psi) / 14.50377`\n\n"
-                f"• **Input**: `{val} PSI`\n"
-                f"• **Result**: **`{res:.4f} Bar`**\n"
-            )
-
-        # Unit Conversion: Celsius <-> Fahrenheit
-        m_c_f = re.search(r'(\d+(?:\.\d+)?)\s*(?:c|celsius|°c|deg c)\s*(?:to|in)\s*(?:f|fahrenheit|°f|deg f)', q_low)
-        if m_c_f:
-            c = float(m_c_f.group(1))
-            f = (c * 9/5) + 32
-            return (
-                f"### 🌡️ Temperature Conversion: Celsius to Fahrenheit\n\n"
-                f"**Formula**: `(°C × 9/5) + 32 = °F`\n\n"
-                f"• **Input**: `{c} °C`\n"
-                f"• **Result**: **`{f:.2f} °F`**"
-            )
-
-        m_f_c = re.search(r'(\d+(?:\.\d+)?)\s*(?:f|fahrenheit|°f|deg f)\s*(?:to|in)\s*(?:c|celsius|°c|deg c)', q_low)
-        if m_f_c:
-            f = float(m_f_c.group(1))
-            c = (f - 32) * 5/9
-            return (
-                f"### 🌡️ Temperature Conversion: Fahrenheit to Celsius\n\n"
-                f"**Formula**: `(°F - 32) × 5/9 = °C`\n\n"
-                f"• **Input**: `{f} °F`\n"
-                f"• **Result**: **`{c:.2f} °C`**"
-            )
-
-        # Percentage Calculation (e.g. "what is 15% of 2500")
-        m_pct = re.search(r'(\d+(?:\.\d+)?)\s*(?:%|percent)\s*(?:of)\s*(\d+(?:\.\d+)?)', q_low)
-        if m_pct:
-            pct = float(m_pct.group(1))
-            total = float(m_pct.group(2))
-            res = (pct / 100.0) * total
-            return (
-                f"### 🧮 Percentage Calculation\n\n"
-                f"**Calculation**: `{pct}%` of `{total}`\n"
-                f"**Formula**: `({pct} / 100) × {total}`\n\n"
-                f"• **Result**: **`{res:.4f}`** (`{res}`)"
-            )
-
-        # Arithmetic Evaluation
-        clean_expr = q_low.replace("what is", "").replace("calculate", "").replace("eval", "").replace("compute", "").strip()
-        clean_expr = clean_expr.replace("x", "*").replace("times", "*").replace("divided by", "/").replace("plus", "+").replace("minus", "-")
-        
-        if re.match(r'^[\d\s\+\-\*\/\(\)\.\^\%]+$', clean_expr) and any(op in clean_expr for op in ['+', '-', '*', '/', '^', '%']):
-            try:
-                py_expr = clean_expr.replace('^', '**')
-                node = ast.parse(py_expr, mode='eval')
-                
-                def _eval_node(n):
-                    if isinstance(n, ast.Expression): return _eval_node(n.body)
-                    elif isinstance(n, ast.Constant): return n.value
-                    elif isinstance(n, ast.Num): return n.n
-                    elif isinstance(n, ast.BinOp):
-                        left, right = _eval_node(n.left), _eval_node(n.right)
-                        if isinstance(n.op, ast.Add): return left + right
-                        if isinstance(n.op, ast.Sub): return left - right
-                        if isinstance(n.op, ast.Mult): return left * right
-                        if isinstance(n.op, ast.Div): return left / right
-                        if isinstance(n.op, ast.Mod): return left % right
-                        if isinstance(n.op, ast.Pow): return left ** right
-                    elif isinstance(n, ast.UnaryOp):
-                        op = _eval_node(n.operand)
-                        if isinstance(n.op, ast.USub): return -op
-                        if isinstance(n.op, ast.UAdd): return +op
-                    raise ValueError("Unsupported")
-
-                result = _eval_node(node)
-                return (
-                    f"### 🧮 Mathematical Result\n\n"
-                    f"**Expression**: `{clean_expr}`\n\n"
-                    f"• **Result**: **`{result}`**"
-                )
-            except Exception:
-                pass
-
-        return None
-
-    def _solve_linear_equation(self, eq: str) -> Optional[str]:
-        """Solves simple linear equations of the form ax + b = c step-by-step."""
-        try:
-            clean = eq.replace(" ", "").replace("solve", "")
-            if "=" not in clean:
-                return None
-            lhs, rhs = clean.split("=")
-            rhs_val = float(rhs)
-            
-            m = re.search(r'([+-]?\d*\.?\d*)\*?([a-zA-Z])([+-]\d+\.?\d*)?', lhs)
-            if m:
-                a_str, var, b_str = m.group(1), m.group(2), m.group(3)
-                a = 1.0 if a_str in ["", "+"] else (-1.0 if a_str == "-" else float(a_str))
-                b = float(b_str) if b_str else 0.0
-                
-                step1_rhs = rhs_val - b
-                sol = step1_rhs / a
-                
-                return (
-                    f"### 🧮 Step-by-Step Equation Solution\n\n"
-                    f"**Equation**: `{lhs} = {rhs}`\n\n"
-                    f"#### 📐 Solution Steps:\n"
-                    f"1. **Original Equation**: `{a}{var} {'+' if b >= 0 else ''}{b} = {rhs_val}`\n"
-                    f"2. **Subtract constant `{b}` from both sides**:\n"
-                    f"   `{a}{var} = {rhs_val} - ({b})`\n"
-                    f"   `{a}{var} = {step1_rhs}`\n"
-                    f"3. **Divide by coefficient `{a}`**:\n"
-                    f"   `{var} = {step1_rhs} / {a}`\n"
-                    f"   **`{var} = {sol:g}`**\n\n"
-                    f"• **Final Answer**: **`{var} = {sol:g}`**"
-                )
-        except Exception:
-            pass
-        return None
-
-    # ── Code & Programming Engine ─────────────────────────────────────────────
+    # ── 5. Code & Programming Engine ─────────────────────────────────────────
     def _check_coding_request(self, q: str) -> Optional[str]:
         q_low = q.lower()
         if not any(k in q_low for k in ["code", "script", "python", "javascript", "sql", "function", "regex", "bash", "shell", "program"]):
@@ -591,7 +942,7 @@ class OfflineIntelligenceEngine:
             "```"
         )
 
-    # ── SOP Relevance Check & Grounded Synthesis ──────────────────────────────
+    # ── 6. SOP Relevance Check & Grounded Synthesis ──────────────────────────
     def _is_sop_relevant(self, q: str, docs: List[Document]) -> bool:
         sop_keywords = [
             "cdu", "h2s", "shutdown", "psv", "prv", "permit", "hot work", "zone-1", "zone-2",
@@ -605,7 +956,7 @@ class OfflineIntelligenceEngine:
     def _synthesize_sop_response(self, query: str, docs: List[Document]) -> str:
         """Synthesizes structured safety answers from retrieved SOP chunks."""
         q_low = query.lower()
-        
+
         # 1. Emergency Shutdown CDU
         if "cdu" in q_low or ("emergency" in q_low and "shutdown" in q_low):
             return (
@@ -691,40 +1042,97 @@ class OfflineIntelligenceEngine:
             + "\n\n> [!NOTE]\n> Ensure all actions comply with MRPL sovereign safety directives and active work permit authorizations."
         )
 
-    # ── General Knowledge Engine ──────────────────────────────────────────────
-    def _check_general_knowledge(self, q: str) -> Optional[str]:
+    # ── 7. General Knowledge & Subject Engine ────────────────────────────────
+    def _check_general_knowledge(self, q: str, q_raw: str = "") -> Optional[str]:
+        # Physics: Laws of Motion
+        if "laws of motion" in q or "newton's law" in q or "newtons law" in q:
+            return (
+                "### ⚛️ Physics: Newton's Three Laws of Motion\n\n"
+                "1. **First Law (Inertia)**: An object remains at rest or continues in uniform motion in a straight line unless acted upon by a net external force ($F_{net} = 0 \\implies a = 0$).\n"
+                "2. **Second Law (Force & Acceleration)**: The rate of change of momentum is directly proportional to the applied force: **$F = m \\times a$**.\n"
+                "3. **Third Law (Action & Reaction)**: For every action, there is an equal and opposite reaction ($F_{A \\rightarrow B} = -F_{B \\rightarrow A}$)."
+            )
+
+        # Physics: Thermodynamics
+        if "thermodynamics" in q:
+            return (
+                "### 🌡️ Physics: The Laws of Thermodynamics\n\n"
+                "1. **Zeroth Law**: If two systems are in thermal equilibrium with a third, they are in equilibrium with each other (defines Temperature).\n"
+                "2. **First Law (Conservation of Energy)**: Energy cannot be created or destroyed, only transformed: **$\\Delta U = Q - W$**.\n"
+                "3. **Second Law (Entropy)**: The total entropy of an isolated system always increases over time (heat flows naturally from hot to cold).\n"
+                "4. **Third Law (Absolute Zero)**: As temperature approaches absolute zero ($0\\text{ K}$ or $-273.15^\\circ\\text{C}$), the entropy of a pure crystalline substance approaches zero."
+            )
+
+        # Chemistry: pH Scale
+        if bool(re.search(r'\b(?:ph scale|what is ph|ph value|acids and bases)\b', q)):
+            return (
+                "### 🧪 Chemistry: The pH Scale ($-\\log_{10}[H^+]$)\n\n"
+                "The **pH scale** measures the hydrogen ion concentration / acidity of an aqueous solution from **0 to 14**:\n\n"
+                "• **pH < 7**: **Acidic** (e.g. Battery acid pH 0, Gastric juice pH 1.5, Lemon juice pH 2.5, H₂SO₄).\n"
+                "• **pH = 7**: **Neutral** (Pure distilled water at 25°C).\n"
+                "• **pH > 7**: **Basic / Alkaline** (e.g. Blood pH 7.4, Bleach pH 12, Caustic Soda NaOH pH 14).\n\n"
+                "*(In MRPL effluent treatment & boiler feed water, pH is strictly regulated between 6.5 and 8.5)*"
+            )
+
+        # Biology: Photosynthesis
+        if "photosynthesis" in q:
+            return (
+                "### 🌱 Biology: Photosynthesis\n\n"
+                "**Photosynthesis** is the biological process by which green plants and algae convert light energy into chemical energy stored in glucose.\n\n"
+                "#### 🔬 Chemical Equation:\n"
+                "$$\\mathbf{6CO_2 + 6H_2O \\xrightarrow{\\text{Light + Chlorophyll}} C_6H_{12}O_6 + 6O_2}$$\n\n"
+                "• **Reactants**: Carbon Dioxide ($CO_2$) + Water ($H_2O$) + Solar Photons.\n"
+                "• **Products**: Glucose ($C_6H_{12}O_6$) + Oxygen Gas ($O_2$).\n"
+                "• **Site**: Occurs inside the **chloroplasts** (thylakoid membrane for light reactions, stroma for Calvin cycle)."
+            )
+
+        # Chemistry: Refining Overview
         if "refinery" in q or "refining" in q:
             return (
                 "### 🏭 Petroleum Refining Overview\n\n"
                 "A **petroleum refinery** is an industrial process plant where crude oil is transformed and refined into useful products such as LPG, gasoline, kerosene, jet fuel, diesel, and petrochemical feedstocks.\n\n"
                 "#### Key Processing Stages:\n"
-                "1. **Atmospheric & Vacuum Distillation**: Separation based on boiling points.\n"
+                "1. **Atmospheric & Vacuum Distillation (CDU/VDU)**: Physical separation based on boiling points.\n"
                 "2. **Hydrotreating (DHDS / DHDT)**: Catalytic removal of sulfur, nitrogen, and contaminants.\n"
-                "3. **Fluid Catalytic Cracking & Hydrocracking**: Upgrading heavy streams into high-value distillates.\n"
-                "4. **Catalytic Reforming**: Enhancing gasoline octane number."
+                "3. **Fluid Catalytic Cracking & Hydrocracking (HCU)**: Upgrading heavy vacuum gas oils into high-value distillates.\n"
+                "4. **Catalytic Reforming (CCR)**: Enhancing gasoline octane number."
             )
 
         if "lel" in q or "lower explosive limit" in q:
             return (
                 "### ⚠️ Lower Explosive Limit (LEL)\n\n"
                 "The **Lower Explosive Limit (LEL)** is the minimum concentration of a combustible gas in air below which flame cannot propagate.\n\n"
-                "• **0% LEL**: Zero combustible vapor.\n"
+                "• **0% LEL**: Zero combustible vapor (Clean air).\n"
                 "• **100% LEL**: Lowest flammable concentration.\n"
-                "• **MRPL Rule**: Hot work requires **0.0% LEL**; work is aborted if LEL exceeds **1.0%**."
+                "• **MRPL Rule**: Hot work requires **0.0% LEL**; work is aborted immediately if LEL exceeds **1.0%**."
             )
 
         return None
 
-    def _general_ai_fallback(self, query: str) -> str:
+    def _general_ai_fallback(self, query: str, docs: List[Document] = None) -> str:
+        # If docs are provided from a specific search, provide extractive synthesis
+        if docs:
+            snippets = []
+            for d in docs[:2]:
+                text = d.page_content.strip()
+                if len(text) > 20:
+                    snippets.append(text[:300])
+            if snippets:
+                return (
+                    f"### 💡 Sovereign Analysis: \"{query}\"\n\n"
+                    + "\n\n".join([f"• {s}" for s in snippets])
+                    + "\n\n*Response grounded in local Sovereign knowledge base.*"
+                )
+
         return (
             f"### 💡 PRAHARI AI Sovereign Assistant\n\n"
             f"Regarding your query: **\"{query}\"**\n\n"
-            f"As your sovereign offline AI assistant, I provide verified technical directives, asset maintenance lookups, multimodal P&ID analysis, and material code harmonization for MRPL.\n\n"
+            f"As your sovereign offline AI assistant, I provide verified technical directives, mathematical solutions, asset maintenance lookups, multimodal P&ID analysis, and material code harmonization for MRPL.\n\n"
             f"You can explore:\n"
+            f"• **Mathematical & Scientific Problem Solving** (e.g. `can u solve 12*5+4`, `solve 2x + 5 = 15`)\n"
             f"• **Asset Maintenance History** (e.g. `PRV-401`, `P-101A`, `F-101`, `DV-201`, `RIV-102`)\n"
             f"• **P&ID Schematic & Defect Diagnostics** (e.g. `Analyze CDU-3 P&ID schematic`)\n"
             f"• **Material Code Harmonization** (e.g. `Check vendor flange spec against MOP&NG standard`)\n"
-            f"• **Near-Miss Precursor NLP Screening** (e.g. `Screen field logs for injury precursors`)\n"
             f"• **MRPL Emergency SOPs** (e.g. `Emergency shutdown procedure for CDU`)"
         )
 

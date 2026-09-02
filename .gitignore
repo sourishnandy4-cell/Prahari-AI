@@ -42,10 +42,10 @@ frontend/dist/
 frontend/dist_electron/
 frontend/.vite/
 *.exe
-*.apk
-*.blockmap
-release/*.exe
-release/*.apk
+release/
+release/*
+release/**/*.exe
+release/**/*.apk
 frontend/android/.gradle/
 frontend/android/build/
 frontend/android/app/build/

@@ -383,7 +383,7 @@ export default function ChatWindow({
         {isStreaming && messages.some(m => m.streaming) && (
           <div className="max-w-3xl mx-auto flex items-center gap-2 text-xs text-zinc-400 mt-2 pl-4 animate-pulse">
             <Radio className="w-3 h-3 text-cyan-400" />
-            <span>Streaming tokens from local Llama 3.2...</span>
+            <span>Streaming response from Sovereign AI...</span>
           </div>
         )}
 
