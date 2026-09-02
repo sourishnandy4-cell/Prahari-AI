@@ -417,7 +417,7 @@ function buildAppMenu() {
             type: 'info',
             title: 'About PRAHARI AI',
             message: 'PRAHARI AI — Sovereign Industrial Safety Intelligence',
-            detail: 'Version 2.7.3\nBuilt for MRPL Refinery\n\n100% Offline / Air-Gapped\nPowered by Sovereign AI + ChromaDB + BM25',
+            detail: 'Version 2.7.4\nBuilt for MRPL Refinery\n\n100% Offline / Air-Gapped\nPowered by Sovereign AI + ChromaDB + BM25',
             buttons: ['OK'],
           }),
         },

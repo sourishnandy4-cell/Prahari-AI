@@ -324,7 +324,7 @@ export default function Sidebar({
             <span>Replay Intro</span>
           </button>
           <span className="text-[10px] text-slate-500 font-mono tracking-wider">
-            MRPL v2.7.3 • Sovereign AI
+            MRPL v2.7.4 • Sovereign AI
           </span>
         </div>
       </div>
