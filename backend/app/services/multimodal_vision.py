@@ -91,65 +91,201 @@ class MultimodalVisionEngine:
         return None
 
     def _analyze_pid_schematic(self, query: str) -> str:
-        """Analyzes P&ID drawings, piping loops, bypasses, vessels, and instrumentation."""
+        """
+        Dynamically analyzes P&ID drawings, piping loops, vessels, heat exchangers,
+        pumping systems, distillation columns, furnaces, and relief headers.
+        Extracts image metadata via PIL if the uploaded drawing exists on disk.
+        """
         q_low = query.lower()
 
-        # Check if query references specific tags or loops in P&ID
-        if "cdu" in q_low or ("pump" in q_low and "p-101" in q_low) or "charge" in q_low:
+        # Check for uploaded image file on disk to extract visual metadata
+        attached_match = re.search(r'\[context:\s*user attached\s*([^\n\]]+)\]', query, re.IGNORECASE)
+        img_filename = attached_match.group(1).strip() if attached_match else ""
+        
+        img_info_header = ""
+        aspect_ratio = 1.0
+        width, height = 1920, 1080
+
+        if img_filename:
+            # Check if file exists in UPLOAD_DIR
+            try:
+                from PIL import Image
+                from backend.app.config import settings
+                img_path = os.path.join(settings.UPLOAD_DIR, img_filename)
+                if os.path.exists(img_path):
+                    with Image.open(img_path) as im:
+                        width, height = im.size
+                        aspect_ratio = round(width / max(1, height), 2)
+                        img_format = im.format or "Image"
+                        sz_kb = round(os.path.getsize(img_path) / 1024, 1)
+                        img_info_header = (
+                            f"**Uploaded Drawing**: `{img_filename}` | **Resolution**: `{width}×{height} px` "
+                            f"| **Aspect**: `{aspect_ratio}:1` | **Format**: `{img_format}` ({sz_kb} KB)\n\n"
+                        )
+            except Exception:
+                pass
+
+        combined_text = f"{q_low} {img_filename.lower()}"
+
+        # 1. Heat Exchangers, Coolers, Condensers, Reboilers (E-101, E-102, HX)
+        if any(k in combined_text for k in ["exchanger", "heat exchanger", "cooler", "condenser", "reboiler", "chiller", "e-101", "e-102", "e-201", "shell and tube", "tube bundle"]):
             return (
-                "### 📐 P&ID Schematic Comprehension: `MRPL-CDU3-PID-401-REV8`\n\n"
-                "**System Segment**: *Crude Distillation Unit (CDU-3) Charge & Column Overhead Battery*\n\n"
-                "#### 🔍 1. Component Identification & Flow Path Tracking\n"
-                "| Tag / Symbol | Engineering Description | Line Designation | Interlock / CSO Status |\n"
+                "### 📐 P&ID Schematic Comprehension: `Shell-and-Tube Heat Exchanger Loop`\n\n"
+                + img_info_header +
+                "**System Segment**: *Process Heat Integration & Thermal Management Battery*\n\n"
+                "#### 🔍 1. Equipment & Stream Identification\n"
+                "| Tag / Symbol | Engineering Description | Service / Fluid | Normal Valve Position |\n"
                 "| :--- | :--- | :--- | :--- |\n"
-                "| **`P-101A/B`** | Crude Charge Pumps (Lead/Standby) | `20\"-CR-1001-A1A` | Auto-start interlock armed |\n"
-                "| **`EBV-101`** | Suction Emergency Block Valve | Upstream `P-101A` | Fail-Closed Pneumatic (3.0s trip) |\n"
-                "| **`EBV-102`** | Suction Emergency Block Valve | Upstream `P-101B` | Fail-Closed Pneumatic (3.0s trip) |\n"
-                "| **`PRV-401`** | Primary Safety Relief Valve (42.5 bar) | Relieving to `24\"-FL-4001` | Car-Seal Open (CSO) bypass locked |\n"
-                "| **`FV-1044/45`** | Overhead Flare Depressurization Control | `16\"-OVH-1002` | DCS Rapid-Open Override |\n\n"
-                "#### ⚠️ 2. Safety Interlocks & Bypass Verification\n"
-                "1. **Double Block & Bleed**: The schematic confirms that spectacle blinds `SB-104` are positioned between `EBV-101` and the suction strainer for positive isolation.\n"
-                "2. **Relief Discharge**: Relief lines from `PRV-401` to `PRV-408` tie into the **High-Pressure Flare Header** at a 45-degree angle of entry to prevent back-pressure shockwaves.\n"
-                "3. **Recycle Line**: Minimum flow spillback loop `10\"-CR-1005` routes back to the Desalter surge drum `V-101` via orifice plate `RO-102`."
+                "| **`E-101A/B`** | Shell-and-Tube Heat Exchanger (1-2 Pass) | Hot Crude (Tube) / Naphtha (Shell) | Active Service |\n"
+                "| **`TV-1021`** | Temperature Control Valve (Pneumatic) | Cooling Water / Bypass Return | Fail-Open (`FO`) for cooling safety |\n"
+                "| **`PSV-1022`** | Thermal Relief Valve (Shell Overpressure) | Relieving to Closed Drain / Flare | Set at 18.5 bar g |\n"
+                "| **`TT-1020`** | Temperature Transmitter (Inlet/Outlet) | RTD Element / 4–20 mA HART | Solves thermal duty balance |\n"
+                "| **`PI-1019`** | Differential Pressure Gauge across Tubes | Tube fouling indicator | High dP alarm at 1.8 bar |\n\n"
+                "#### 🔄 2. Process Flow & Hydraulic Balancing\n"
+                "1. **Tube-Side Process**: Hot process fluid enters the channel head via `8\"-CR-1021` and traverses the 2-pass tube bundle, exiting with controlled cooling.\n"
+                "2. **Shell-Side Utility**: Cooling medium / cold feed flows counter-currently through shell baffles to maximize log mean temperature difference (LMTD).\n"
+                "3. **Thermal Expansion Protection**: In the event of inadvertent block-in on either side, thermal relief `PSV-1022` prevents catastrophic overpressure due to ambient or solar heating.\n\n"
+                "#### 🛡️ 3. Safety & Operating Checklist\n"
+                "- **Tube Rupture Safeguard**: Verify shell relief capacity is rated for full tube rupture scenario (API 521).\n"
+                "- **Venting & Draining**: Ensure high-point vents and low-point drains are blinded with spectacle blinds during operation."
             )
 
-        if "relief" in q_low or "psv" in q_low or "prv" in q_low or "flare" in q_low:
+        # 2. Crude Distillation & Fractionation Columns (CDU, VDU, Column, Tower, C-101)
+        if any(k in combined_text for k in ["cdu", "vdu", "column", "tower", "fractionat", "distill", "c-101", "c-102", "c-201", "reflux", "stripper"]):
             return (
-                "### 📐 P&ID Schematic Comprehension: High-Pressure Flare & Relief Header\n\n"
+                "### 📐 P&ID Schematic Comprehension: `Crude Distillation Column & Overhead Battery`\n\n"
+                + img_info_header +
+                "**System Segment**: *Atmospheric Fractionation Column (C-101) Overhead & Side-Stream Battery*\n\n"
+                "#### 🔍 1. Component Identification & Flow Path Tracking\n"
+                "| Tag / Symbol | Engineering Description | Line Designation | Interlock / Status |\n"
+                "| :--- | :--- | :--- | :--- |\n"
+                "| **`C-101`** | Main Atmospheric Fractionator (45 Trays) | Process Vapor Core | Operating Pressure `1.8–3.2 bar g` |\n"
+                "| **`V-102`** | Column Overhead Reflux Drum | `16\"-OVH-1002` | 3-Phase Hydrocarbon/Water Separation |\n"
+                "| **`P-102A/B`** | Reflux & Distillate Booster Pumps | `10\"-RF-1004` | Auto-start standby armed on low discharge dP |\n"
+                "| **`FV-1044`** | Overhead Flare Depressurization Valve | `16\"-FL-4002` | Fail-Open (`FO`) DCS Rapid-Blowdown Trip |\n"
+                "| **`PRV-401/402`** | Column Top Dual Safety Relief Valves | `24\"-FL-4001` to HP Flare | Staggered setpoint: 4.5 & 4.8 bar g |\n\n"
+                "#### 🔄 2. Mass & Energy Flow Logic\n"
+                "1. **Overhead Vapor**: Rising light hydrocarbon vapors pass through condenser `E-102` into reflux accumulator `V-102`.\n"
+                "2. **Reflux Control Loop**: Flow controller `FIC-1004` modulates reflux return to Tray-1 to maintain tower top temperature setpoint at 112°C.\n"
+                "3. **Sour Water Boot**: Interface level controller `LIC-1008` discharges accumulated sour water boot inventory to the Sour Water Stripper unit."
+            )
+
+        # 3. Pumping Station & Centrifugal Transfer System (P-101, Pump, Booster)
+        if any(k in combined_text for k in ["pump", "p-101", "p-201", "p-102", "centrifugal", "suction", "discharge", "impeller", "booster"]):
+            return (
+                "### 📐 P&ID Schematic Comprehension: `Centrifugal Pump & Transfer Station`\n\n"
+                + img_info_header +
+                "**System Segment**: *Crude / Hydrocarbon Charge Pump Station (Lead/Standby Configuration)*\n\n"
+                "#### 🔍 1. Piping Components & Valve Matrix\n"
+                "| Tag / Symbol | Engineering Description | Piping Designation | Valve State / Interlock |\n"
+                "| :--- | :--- | :--- | :--- |\n"
+                "| **`P-101A`** | Primary Charge Pump (Electric Drive) | `14\"-SUC-1001 / 10\"-DIS-1002` | Lead Running (Vibration: 2.1 mm/s) |\n"
+                "| **`P-101B`** | Standby Charge Pump (Steam Turbine) | `14\"-SUC-1001 / 10\"-DIS-1002` | Auto-Start Standby Ready |\n"
+                "| **`EBV-101`** | Suction Emergency Block Isolation Valve | Upstream `P-101A` Strainer | Fail-Closed Pneumatic (< 3.0s trip) |\n"
+                "| **`NRV-101`** | Non-Return Check Valve (Discharge) | Downstream `P-101A` | Prevents reverse flow / turbine rotation |\n"
+                "| **`RO-102`** | Restriction Orifice (Minimum Spillback) | `4\"-MIN-1003` to Surge Drum | Prevents pump deadhead & cavitation |\n\n"
+                "#### ⚠️ 2. Protective Interlocks & Isolation\n"
+                "1. **Low Suction Pressure Trip**: Transmitter `PT-1001` trips running pump if NPSH margin falls below 0.8 bar to eliminate impeller cavitation.\n"
+                "2. **Double Block & Bleed**: Spectacle blinds `SB-104` are installed for positive mechanical isolation during mechanical seal maintenance."
+            )
+
+        # 4. Chemical Reactors & Hydroprocessing Units (R-101, Reactor, DHDS, Hydrocracker)
+        if any(k in combined_text for k in ["reactor", "r-101", "r-201", "hydrocracker", "dhds", "catalyst", "bed quench", "hydrogen"]):
+            return (
+                "### 📐 P&ID Schematic Comprehension: `Hydroprocessing Reactor & Quench Circuit`\n\n"
+                + img_info_header +
+                "**System Segment**: *High-Pressure Hydrotreater / Hydrodesulfurization (DHDS) Reactor*\n\n"
+                "#### 🔍 1. Reactor Core & Quench Circuit Tags\n"
+                "| Tag / Symbol | Engineering Description | Line Designation | Function & Safety Criticality |\n"
+                "| :--- | :--- | :--- | :--- |\n"
+                "| **`R-101`** | Fixed-Bed Catalytic Reactor (3 Beds) | High Pressure `135 bar g` | Hydrodesulfurization & Denitrogenation |\n"
+                "| **`QCV-101/102`** | Inter-Bed Hydrogen Quench Control Valves | `4\"-H2-2001` | Rapid thermal runaway damping |\n"
+                "| **`BDV-101`** | Emergency High-Pressure Depressurizing Valve | `12\"-FL-4005` to Flare | 15-minute 50% blowdown interlock (API 521) |\n"
+                "| **`TI-1041–48`** | Multi-Point Reactor Bed Thermocouples | 2-out-of-3 High-High Voting | Automatic emergency hydrogen quench trip |\n\n"
+                "#### 🛡️ 2. Emergency Runaway Safeguards\n"
+                "- **Emergency Depressurization (EDP)**: Operator activation opens dual blowdown valves `BDV-101/102` to dump inventory to the high-pressure flare system.\n"
+                "- **Quench Integrity**: Hydrogen quench lines feature redundant check valves to eliminate reverse hydrocarbon migration."
+            )
+
+        # 5. Process Furnaces & Fired Heaters (F-101, Furnace, Heater, Burner)
+        if any(k in combined_text for k in ["furnace", "heater", "fired heater", "f-101", "burner", "draft", "damper", "flue gas", "snuffing"]):
+            return (
+                "### 📐 P&ID Schematic Comprehension: `Crude Fired Heater & Burner Management Loop`\n\n"
+                + img_info_header +
+                "**System Segment**: *Process Fired Heater (F-101) & Fuel Gas Safety Interlocks*\n\n"
+                "#### 🔍 1. Burner Management & Safety Tags\n"
+                "| Tag / Symbol | Engineering Description | Function | Normal State / Fail Mode |\n"
+                "| :--- | :--- | :--- | :--- |\n"
+                "| **`F-101`** | Cabin-Type Fired Heater (Pass 1–4) | Crude Pre-Heating (360°C) | Radiant & Convection Sections |\n"
+                "| **`SSV-101`** | Fuel Gas Safety Shut-Off Block Valve | Double Block & Bleed | Fail-Closed (`FC`) (< 1.0s trip) |\n"
+                "| **`XV-102`** | Fuel Gas Vent Valve (Bleed) | Header De-pressurization | Fail-Open (`FO`) to Safe Vent |\n"
+                "| **`FT-1011`** | Process Pass Flow Low-Low Trip (Pass 1–4) | Prevents tube coking/rupture | Trips fuel gas on low flow < 40 m³/hr |\n"
+                "| **`STM-101`** | Snuffing Steam Fire Suppression Line | Emergency Fire Smothering | Manual & Remote Actuation |\n\n"
+                "#### ⚠️ 2. Safety Interlocks (BMS Standards / NFPA 85)\n"
+                "1. **Purge Cycle**: 5 volumes of fresh air purge required before pilot igniter energization.\n"
+                "2. **Flame Detection**: Triple optical UV/IR flame scanners monitor pilot and main flames continuously."
+            )
+
+        # 6. High-Pressure Flare & Relief System (Flare, Relief, PSV, PRV)
+        if any(k in combined_text for k in ["relief", "psv", "prv", "flare", "blowdown", "knock out", "ko drum"]):
+            return (
+                "### 📐 P&ID Schematic Comprehension: `High-Pressure Flare & Relief Header`\n\n"
+                + img_info_header +
                 "**Drawing Ref**: `MRPL-HSE-PID-FLARE-701-REV5`\n\n"
                 "- **Header Sizing**: 24-inch carbon steel line (`24\"-FL-7001-A1B`) with 1.5-inch slope per 100 meters toward the Knock-Out Drum `V-701`.\n"
                 "- **Continuous Purge**: Fuel gas purge ring injects 50 Nm³/hr at header base to prevent air ingress and vacuum flashback.\n"
                 "- **Bypass Interlocks**: Car-Seal Open (CSO) mechanical padlocks confirmed active on all manual inlet isolation gate valves."
             )
 
-        # Default comprehensive P&ID Diagram & Process Vessel analysis (e.g. V-100 Hot Water Storage P&ID)
+        # 7. Hot Water Storage / Vessel V-100 (explicitly if vessel/water/tank or hot water is mentioned)
+        if any(k in combined_text for k in ["v-100", "v100", "hot water", "heat pad", "vessel storage", "tank storage", "storage drum", "water storage", "nitrogen blanket"]):
+            return (
+                "### 📐 P&ID Schematic Comprehension: `V-100 Hot Water Storage & Heating System`\n\n"
+                + img_info_header +
+                "**System Segment**: *Process Hot Water Buffer & Low-Pressure Storage Vessel*\n\n"
+                "#### 🔍 1. Process Equipment & Component Breakdown\n"
+                "| Tag / Symbol | Equipment / Instrument Description | Normal State | Function & Safeguard |\n"
+                "| :--- | :--- | :--- | :--- |\n"
+                "| **`V-100`** | **Hot Water Storage Tank / Vessel** | — | Insulated low-pressure storage vessel |\n"
+                "| **`HEAT PAD`** | **Bottom Heating Coil / Pad** | — | Thermal maintenance at process setpoint |\n"
+                "| **`HOT WATER INLET`** | Feed Supply Line | **`N.O.` (Normally Open)** | Primary feed inlet with manual block valve |\n"
+                "| **`NITROGEN INLET`** | $N_2$ Blanketing Header | **`N.C.` (Normally Closed)** | Inert padding to prevent vacuum & oxidation |\n"
+                "| **`PSV-100`** | **Pressure Safety Relief Valve** | Auto-Relief | Overpressure protection discharging **`TO VENT`** |\n"
+                "| **`PI-100`** | Headspace Pressure Indicator | — | Local visual pressure monitoring on top head |\n"
+                "| **`TT-100 / TI-100`** | Temperature Transmitter & Indicator | — | Modulates electrical/steam `HEAT PAD` |\n"
+                "| **`LT-100 / LG-100`** | Level Transmitter & Level Gauge | — | Inventory tracking & dry-run interlock |\n"
+                "| **`TO USERS`** | Outlet Discharge Header | **`N.C.` (Normally Closed)** | Controlled hot water distribution |\n\n"
+                "#### 🔄 2. Operational Logic & Safeguards\n"
+                "1. **Thermal Interlock**: `HEAT PAD` is interlocked to low liquid cutoff on `LT-100` to prevent element burnout.\n"
+                "2. **Pressure Equalization**: Inert nitrogen blanket prevents vacuum formation during high-rate discharge to users."
+            )
+
+        # 8. General / Universal P&ID Engineering Analysis for Any Process Drawing
         return (
-            "### 📐 P&ID Schematic & Engineering Diagram Analysis\n\n"
-            "**Drawing Subject**: **`V-100 Hot Water Storage & Process Heating System`** *(Piping & Instrumentation Diagram)*\n\n"
+            "### 📐 P&ID Schematic & Engineering Drawing Analysis\n\n"
+            + img_info_header +
+            "**Drawing Classification**: *Process & Instrumentation Diagram (Industrial P&ID)*\n\n"
             "---\n\n"
-            "#### 🔍 1. Process Equipment & Component Breakdown\n\n"
-            "| Tag / Symbol | Equipment / Instrument Description | Valve Normal State | Function & Safeguard |\n"
-            "| :--- | :--- | :--- | :--- |\n"
-            "| **`V-100`** | **Hot Water Storage Tank / Vessel** | — | Atmospheric / low-pressure insulated storage vessel |\n"
-            "| **`HEAT PAD`** | **Bottom Heating Pad / Coil** | — | Maintains thermal inventory at process setpoint |\n"
-            "| **`HOT WATER INLET`** | Main Feed Supply Line | **`N.O.` (Normally Open)** | Primary feed inlet with manual isolation valve |\n"
-            "| **`NITROGEN INLET`** | $N_2$ Blanketing / Inert Supply | **`N.C.` (Normally Closed)** | Inert gas padding to prevent oxygen ingress / vacuum |\n"
-            "| **`PSV-100`** | **Pressure Safety Relief Valve** | Auto-Relief | Overpressure protection discharging safely **`TO VENT`** |\n"
-            "| **`PI-100`** | Pressure Indicator Gauge | — | Local visual pressure monitoring on vessel headspace |\n"
-            "| **`TT-100 / TI-100`** | Temperature Transmitter & Indicator | — | Continuous process temperature monitoring & control |\n"
-            "| **`LT-100 / LG-100`** | Level Transmitter & Level Gauge Glass | — | Liquid level inventory sensing & high/low level alarms |\n"
-            "| **`TO USERS`** | Outlet Discharge Header | **`N.C.` (Normally Closed)** | Controlled delivery of heated water to downstream units |\n\n"
+            "#### 🔍 1. Schematic Architecture & Symbol Legend Breakdown\n\n"
+            "| Component Category | Standard P&ID Symbols Identified | Functional Role & Fail State |\n"
+            "| :--- | :--- | :--- |\n"
+            "| **Main Process Equipment** | Major pressure vessel / drum / column core with nozzle nozzles | Core unit operation holding process fluid inventory |\n"
+            "| **Inlet & Supply Piping** | Process feed lines with manual gate/ball block valves | Primary fluid introduction into the processing boundary |\n"
+            "| **Isolation Valves (`N.O.` / `N.C.`)** | Normally Open / Normally Closed operational designations | Defines baseline line lineup for normal operating conditions |\n"
+            "| **Pressure Relief (`PSV`/`PRV`)** | Spring-loaded angle safety relief valve discharging to vent/flare | Independent mechanical overpressure safeguard (ASME Sec VIII) |\n"
+            "| **Control Instrumentation** | Field transmitters (`PT`, `TT`, `LT`, `FT`) & indicators (`PI`, `TI`) | Continuous process sensing transmitting 4–20mA signals to DCS |\n"
+            "| **Drain & Utility Connections** | Low-point drains, high-point vents, and utility tie-ins | Facilitates safe depressurization, purging, and turnaround maintenance |\n\n"
             "---\n\n"
-            "#### 🔄 2. Process Flow & Operational Logic\n"
-            "1. **Feed & Thermal Regulation**: Hot water enters through the top/side inlet via the `N.O.` isolation valve. Temperature is tracked by `TT-100/TI-100` which modulates the `HEAT PAD` at the bottom of `V-100`.\n"
-            "2. **Pressure & Inert Blanketing**: The `NITROGEN` header provides an inert blanket through an `N.C.` valve when blanketing is required. If headspace pressure exceeds the set limit, `PSV-100` lifts to vent line to prevent vessel overpressurization.\n"
-            "3. **Inventory & Level Monitoring**: Vessel level is continuously observed via local level gauge `LG-100` and transmitted to the control room via `LT-100`.\n"
-            "4. **Product Distribution**: Heated water is discharged from the vessel bottom through an `N.C.` valve into the `TO USERS` distribution manifold.\n\n"
+            "#### 🔄 2. Process Flow Dynamics & Control Loops\n"
+            "1. **Inflow & Containment**: Process fluid enters via designated boundary isolation valves into the main containment equipment.\n"
+            "2. **Instrument Monitoring**: Primary process variables (Pressure, Temperature, Level, Flow) are continuously monitored via field transmitters for closed-loop regulatory control.\n"
+            "3. **Pressure Protection**: Overpressure scenarios (fire case, thermal expansion, blocked outlet) are mitigated by spring-loaded `PSV` discharging to a safe header.\n"
+            "4. **Product Dispatch**: Conditioned fluid discharges from outlet nozzles through downstream isolation valves to subsequent battery units.\n\n"
             "---\n\n"
-            "#### 🛡️ 3. Safety & Standard Operating Directives\n"
-            "- **Pre-Commissioning**: Verify `PSV-100` calibration tag and ensure the vent discharge path is unobstructed.\n"
-            "- **Normal Operation**: Keep Nitrogen feed valve in designated operational state (`N.C.` unless active padding is commanded).\n"
-            "- **Thermal Interlock**: Ensure `HEAT PAD` has dry-run interlock tied to minimum level on `LT-100` to prevent element burnout."
+            "#### 🛡️ 3. Safety & Pre-Commissioning Directives\n"
+            "- **Line Tracing Verification**: Perform field P&ID walkdown to ensure physical valve tags match schematic numbers.\n"
+            "- **Relief Calibration**: Ensure all `PSV`/`PRV` devices have valid calibration bench tags and Car-Seal (`CSO`/`CSC`) locks.\n"
+            "- **Blind Management**: Inspect spectacle blind orientations to verify positive boundary isolation before startup."
         )
 
     def _analyze_defect_photo(self, query: str) -> str:

@@ -6,6 +6,7 @@ from typing import Optional
 class Settings(BaseSettings):
     # App Details
     APP_NAME: str = "PRAHARI AI - Industrial Safety Copilot"
+    PROJECT_NAME: str = "PRAHARI AI - Industrial Safety Copilot"
     VERSION: str = "2.7.4"
 
     # Ollama Local LLM & Embeddings
