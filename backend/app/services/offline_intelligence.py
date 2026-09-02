@@ -801,28 +801,76 @@ class OfflineIntelligenceEngine:
 
         return None
 
-    # ── 3. Greetings ─────────────────────────────────────────────────────────
+    # ── 3. Greetings, Wellness & Daily Assistant Engine ───────────────────────
     def _check_greeting(self, q: str) -> Optional[str]:
-        greetings = ["hi", "hello", "hey", "good morning", "good afternoon", "good evening", "namaste", "howdy", "sup", "greetings"]
-        words = re.findall(r'\b\w+\b', q)
-        if len(words) <= 4 and any(w in greetings for w in words):
+        q_low = q.lower().strip()
+        words = re.findall(r'\b\w+\b', q_low)
+
+        # Health & Empathy: "hi i am not feeling well", "i have a headache", "feeling sick", "tired"
+        if any(k in q_low for k in [
+            "not feeling well", "feeling unwell", "am sick", "feel sick", "have a headache", "have fever",
+            "body pain", "feeling tired", "exhausted", "stomach ache", "feeling low", "feeling sad", "stressed"
+        ]):
             return (
-                "👋 **Hello! Welcome to PRAHARI AI.**\n\n"
-                "I am your sovereign, 100% offline industrial safety, multimodal reasoning, and general intelligence assistant for MRPL.\n\n"
-                "Here are key capabilities you can test right now:\n"
-                "• 🛡️ **MRPL Standard Operating Procedures**: Emergency shutdowns (CDU, HCU), H2S toxic gas limits, PSV/PRV testing, Hot Work & LOTO permits.\n"
-                "• 🏷️ **Asset Maintenance Registry**: Lookup equipment history (`PRV-401`, `P-101A`, `F-101`, `DV-201`, `RIV-102`).\n"
-                "• 📐 **Multimodal P&ID & Defect Vision**: Analyze P&ID drawings, flange corrosion, and scanned checklist logs.\n"
-                "• ⚖️ **Material Code Harmonization**: Cross-reference vendor spec sheets against MOP&NG / MESC standards.\n"
-                "• ⚠️ **Near-Miss Precursor NLP**: Screen field logs for high-consequence injury precursors.\n"
-                "• 🧮 **Technical Math & Conversions**: Bar to PSI, °C to °F, LEL %, equation solving, and Python/SQL scripting.\n\n"
-                "*How can I assist your operations right now?*"
+                "### 💙 I'm really sorry to hear that you're not feeling well.\n\n"
+                "Please prioritize taking care of yourself right now. Here are some gentle, practical steps to help you feel better:\n\n"
+                "1. **Rest & Recovery**: Give your body adequate rest. Lie down in a comfortable, quiet, and well-ventilated space.\n"
+                "2. **Hydration**: Sip on warm water, herbal tea (like ginger or chamomile), or an electrolyte solution to keep hydrated.\n"
+                "3. **Reduce Screen Exposure**: Take a break from digital screens and bright lights to reduce eye strain and tension.\n"
+                "4. **Light Nutrition**: If you have an appetite, stick to light, soothing foods (warm soup, khichdi, toast, or fruits).\n\n"
+                "---\n"
+                "> 🩺 **Important Care Reminder**: If your symptoms are severe, worsening, or include high fever, severe chest tightness, or dizziness, please consult a doctor or healthcare professional promptly.\n\n"
+                "*(If you are currently on duty or at the plant, please inform your shift supervisor and visit the Occupational Health Centre / First-Aid post).* Take care and get well soon! Let me know if you need help drafting a leave email or anything else."
             )
-        if "how are you" in q:
+
+        # Gratitude & Closing
+        if any(k in q_low for k in ["thank you", "thanks a lot", "thanks", "appreciate it", "good job", "great work"]):
             return (
-                "**All sovereign systems operating at peak nominal capacity.** 🛡️\n\n"
-                "All local databases, offline neural models, P&ID vision engines, and asset registries are online and 100% air-gapped. How can I assist you today?"
+                "😊 **You're very welcome!**\n\n"
+                "I'm always here to help—whether with everyday questions, writing tasks, mathematics, coding, or industrial operations. Let me know what you'd like to work on next!"
             )
+
+        if any(k in q_low for k in ["good night", "sweet dreams", "sleep well"]):
+            return (
+                "🌙 **Good night!**\n\n"
+                "Have a restful and peaceful sleep. If you need anything tomorrow, I'll be right here ready to help!"
+            )
+
+        if any(k in q_low for k in ["bye", "goodbye", "see you later", "see ya", "catch you later"]):
+            return (
+                "👋 **Goodbye! Have a wonderful day ahead.**\n\n"
+                "Feel free to return whenever you need assistance. Take care!"
+            )
+
+        # Jokes & Humor
+        if any(k in q_low for k in ["tell me a joke", "make me laugh", "say a joke", "funny joke"]):
+            return (
+                "😄 **Here's a good one for you:**\n\n"
+                "Why do chemical engineers and programmers love coffee so much?\n\n"
+                "*Because it's the only substance that turns heat transfer, mass flow, and logic into functional solutions with zero downtime!* ☕🚀\n\n"
+                "Need another one or have a puzzle for me to solve?"
+            )
+
+        # Basic greetings
+        greetings = ["hi", "hello", "hey", "good morning", "good afternoon", "good evening", "namaste", "howdy", "sup", "greetings", "yo"]
+        if any(w in greetings for w in words[:3]) and len(words) <= 5:
+            return (
+                "👋 **Hello! How can I help you today?**\n\n"
+                "I am your versatile AI assistant. You can ask me anything, including:\n"
+                "• ✍️ **Daily Tasks & Writing**: Drafting emails, essays, summaries, and productivity planning.\n"
+                "• 💡 **Everyday Problem Solving & Lifestyle**: Wellness advice, cooking ideas, decision-making, and study tips.\n"
+                "• 🧮 **Math, Science & General Knowledge**: Equations, world facts, physics, chemistry, and history.\n"
+                "• 💻 **Programming & Tech**: Python, JavaScript, SQL, HTML/CSS, algorithms, and debugging.\n"
+                "• 🛡️ **Industrial & Safety Intelligence**: P&ID drawings, refinery SOPs, valve specs, and maintenance logs.\n\n"
+                "What would you like to explore or solve together?"
+            )
+
+        if "how are you" in q_low:
+            return (
+                "😊 **I'm doing great and ready to help you!**\n\n"
+                "How are you doing today? Whether you have a quick question, need to draft something, want to solve a problem, or just want to chat, I'm here for you!"
+            )
+
         return None
 
     # ── 4. Identity & System Info ────────────────────────────────────────────
@@ -832,13 +880,15 @@ class OfflineIntelligenceEngine:
             "what is aegis", "tell me about yourself", "what can you do", "help me", "your capabilities"
         ]):
             return (
-                "### 🛡️ PRAHARI AI — Sovereign Industrial Intelligence Platform\n\n"
-                "**PRAHARI AI** is a sovereign, on-premise, air-gapped intelligence system engineered specifically for high-reliability refinery operations and process safety compliance at **Mangalore Refinery and Petrochemicals Limited (MRPL)**.\n\n"
-                "#### 🌟 Four Core Architectural Pillars:\n"
-                "1. **Document & Knowledge Retrieval (Grounded & Cited)**: Dense ChromaDB + BM25Okapi RRF hybrid search citing exact clauses and page numbers.\n"
-                "2. **Multimodal Reasoning (Vision & Blueprints)**: P&ID schematic comprehension, equipment corrosion/leak defect diagnostics, and scanned checklist OCR.\n"
-                "3. **Agentic Multi-Step Tasks**: Compound investigation pipelines, multi-source incident report drafting, and MOP&NG / MESC Material Code Harmonization.\n"
-                "4. **Demonstrable Sovereignty & Guardrails**: 100% offline air-gapped architecture, calibrated safety refusals on citation gaps, and immutable SHA-256 evidence chain auditing."
+                "### 🤖 Welcome to PRAHARI AI\n\n"
+                "I am **PRAHARI AI**, a versatile, powerful, and intelligent assistant designed to help you with everyday life tasks, problem-solving, and specialized engineering intelligence:\n\n"
+                "#### 🌟 What I Can Do For You:\n"
+                "1. **Everyday Conversation & Assistance**: Answer day-to-day questions, give advice, draft emails/letters, brainstorm ideas, and help with time management.\n"
+                "2. **Math, Science & Logic**: Step-by-step algebra, arithmetic calculations, geometry, physics, and chemistry formulas.\n"
+                "3. **Coding & Technology**: Write and debug Python, JavaScript, SQL, Bash scripts, and web development code.\n"
+                "4. **Industrial & Engineering Intelligence**: Deep P&ID drawing comprehension, Standard Operating Procedures (SOPs), equipment maintenance records, and safety compliance.\n"
+                "5. **100% Sovereign & Air-Gapped**: Runs entirely on your local machine with full data privacy and zero cloud dependencies.\n\n"
+                "Feel free to ask me any question—simple or complex!"
             )
         return None
 
@@ -1107,30 +1157,111 @@ class OfflineIntelligenceEngine:
         return None
 
     def _general_ai_fallback(self, query: str, docs: List[Document] = None) -> str:
-        # If docs are provided from a specific search, provide extractive synthesis
-        if docs:
-            snippets = []
-            for d in docs[:2]:
-                text = d.page_content.strip()
-                if len(text) > 20:
-                    snippets.append(text[:300])
-            if snippets:
+        q_clean = query.strip()
+        q_low = q_clean.lower()
+
+        # 1. Email & Letter Writing (Leave application, Sick leave, Professional emails)
+        if any(k in q_low for k in ["email", "mail", "leave application", "sick leave", "resignation", "draft a letter", "write a letter"]):
+            # Sick leave / Medical leave
+            if any(k in q_low for k in ["sick", "medical", "unwell", "fever", "health"]):
                 return (
-                    f"### 💡 Sovereign Analysis: \"{query}\"\n\n"
-                    + "\n\n".join([f"• {s}" for s in snippets])
-                    + "\n\n*Response grounded in local Sovereign knowledge base.*"
+                    "### ✉️ Professional Sick Leave Application Template\n\n"
+                    "**Subject**: `Leave Application: Sick Leave — [Your Name] — [Employee ID]`\n\n"
+                    "---\n\n"
+                    "Dear **[Manager / Supervisor's Name]**,\n\n"
+                    "I am writing to inform you that I am unwell and experiencing **[mention brief symptoms, e.g., high fever / acute migraine / viral infection]**, and as a result, I will be unable to attend work today, **[Date]** *(or from [Start Date] to [End Date])*. \n\n"
+                    "I have consulted a healthcare professional and have been advised to rest and recuperate. During my absence, **[Colleague's Name / Team Member]** has agreed to assist with any urgent operational matters.\n\n"
+                    "I will keep you updated regarding my recovery and expected return date. Please feel free to reach me on my mobile phone **[Your Phone Number]** in case of an emergency.\n\n"
+                    "Thank you for your understanding and support.\n\n"
+                    "Warm regards,\n\n"
+                    "**[Your Full Name]**  \n"
+                    "*[Your Designation / Unit]*  \n"
+                    "*[Your Contact Information]*"
                 )
 
+            # Casual / Vacation / General Leave
+            if any(k in q_low for k in ["casual", "vacation", "annual", "leave", "time off"]):
+                return (
+                    "### ✉️ Formal Leave Application Template\n\n"
+                    "**Subject**: `Application for Leave of Absence — [Your Name] — [Employee ID]`\n\n"
+                    "---\n\n"
+                    "Dear **[Manager's Name]**,\n\n"
+                    "I am writing to formally request leave of absence from **[Start Date]** to **[End Date]** due to **[mention reason, e.g., personal commitments / family event]**.\n\n"
+                    "Prior to my leave, I will ensure that all my pending tasks are completed or transitioned to **[Colleague's Name]**. I will also set up an out-of-office autoreply for incoming correspondence.\n\n"
+                    "I will resume my regular duties on **[Return Date]**. Thank you for considering my request.\n\n"
+                    "Sincerely,\n\n"
+                    "**[Your Name]**  \n"
+                    "*[Your Department / Contact Number]*"
+                )
+
+            # General Professional Email
+            return (
+                "### ✉️ Professional Email Draft\n\n"
+                "**Subject**: `[Brief & Action-Oriented Subject Line]`\n\n"
+                "---\n\n"
+                "Dear **[Recipient Name]**,\n\n"
+                "I hope this message finds you well.\n\n"
+                "I am writing to **[state primary objective clearly in 1–2 sentences]**.\n\n"
+                "**Key Points / Action Items:**\n"
+                "1. **[Point 1]**: *[Brief detail or context]*\n"
+                "2. **[Point 2]**: *[Deadline or specific requirement]*\n"
+                "3. **[Point 3]**: *[Next steps or expected deliverables]*\n\n"
+                "Please let me know if you need any additional information or have any questions. I look forward to your feedback.\n\n"
+                "Best regards,\n\n"
+                "**[Your Name]**  \n"
+                "*[Your Designation / Organization]*"
+            )
+
+        # 2. Daily Productivity, Habit Building & Time Management
+        if any(k in q_low for k in ["productivity", "focus", "time management", "pomodoro", "study tips", "routine", "organize"]):
+            return (
+                "### 🎯 Practical Daily Productivity & Focus Framework\n\n"
+                "Here are proven, high-impact strategies to maximize your daily output and maintain mental clarity:\n\n"
+                "1. **The 3-Task Rule**: Identify the **top 3 high-leverage tasks** that MUST get done today before opening non-urgent emails or social media.\n"
+                "2. **Pomodoro Focus Blocks**: Work with 100% focus for **25 minutes**, followed by a **5-minute screen-free break**. Complete 4 cycles, then take a longer 20-minute walk.\n"
+                "3. **The 2-Minute Rule**: If an incoming task takes less than 2 minutes to complete, do it immediately rather than putting it on a to-do list.\n"
+                "4. **Time Blocking**: Allocate dedicated morning blocks (9:00 AM – 11:30 AM) for deep cognitive work, leaving afternoons for meetings and administrative tasks.\n"
+                "5. **Daily Shutdown Ritual**: Spend 5 minutes at the end of the day clearing your desk and outlining tomorrow's top priorities so you start with zero friction."
+            )
+
+        # 3. Cooking, Quick Meals & Nutrition Ideas
+        if any(k in q_low for k in ["recipe", "cook", "what to eat", "dinner ideas", "lunch ideas", "breakfast ideas", "healthy meal"]):
+            return (
+                "### 🍳 Quick & Wholesome Meal Inspiration\n\n"
+                "Here are balanced, delicious, and easy-to-prepare meal ideas:\n\n"
+                "#### 🥗 Option 1: 15-Minute Mediterranean Protein Bowl\n"
+                "- **Ingredients**: Steamed rice/quinoa, boiled chickpeas or grilled chicken/paneer, diced cucumbers, cherry tomatoes, and olive oil dressing with lemon & oregano.\n"
+                "- **Benefit**: High protein, rich in fiber, and zero food coma.\n\n"
+                "#### 🍲 Option 2: Comforting One-Pot Dal & Veggie Khichdi\n"
+                "- **Ingredients**: Yellow moong dal, rice, cumin seeds, ginger, turmeric, and diced vegetables (carrots, beans, peas) tempered in a dash of ghee.\n"
+                "- **Benefit**: Extremely soothing for digestion and warm comfort.\n\n"
+                "#### 🥑 Option 3: Quick Power Wrap / Omelette\n"
+                "- **Ingredients**: Whole wheat wrap, 2 scrambled eggs or sauteed tofu, baby spinach, avocado/hummus, and crushed black pepper."
+            )
+
+        # 4. General Problem Solving & Decision Making
+        if any(k in q_low for k in ["should i", "how to choose", "decision", "pros and cons", "advice", "help me decide"]):
+            return (
+                f"### 💡 Decision & Problem-Solving Framework: \"{q_clean}\"\n\n"
+                "To make the most rational, high-confidence decision, consider evaluating through these 4 dimensions:\n\n"
+                "1. **Reversibility Check (Type-1 vs Type-2 Decisions)**:\n"
+                "   - *Reversible (Two-way door)*: Decide quickly with 70% information.\n"
+                "   - *Irreversible (One-way door)*: Deliberate carefully and gather diverse inputs.\n"
+                "2. **10/10/10 Rule**: How will you feel about this choice in **10 minutes**, **10 months**, and **10 years**?\n"
+                "3. **Inversion (Pre-Mortem)**: Ask *\"If this decision fails completely, what was the primary cause?\"* and mitigate that single factor in advance.\n"
+                "4. **Opportunity Cost**: What is the next best alternative you give up by choosing this path?"
+            )
+
+        # 5. Clear, Versatile Fallback for General Queries
         return (
-            f"### 💡 PRAHARI AI Sovereign Assistant\n\n"
-            f"Regarding your query: **\"{query}\"**\n\n"
-            f"As your sovereign offline AI assistant, I provide verified technical directives, mathematical solutions, asset maintenance lookups, multimodal P&ID analysis, and material code harmonization for MRPL.\n\n"
-            f"You can explore:\n"
-            f"• **Mathematical & Scientific Problem Solving** (e.g. `can u solve 12*5+4`, `solve 2x + 5 = 15`)\n"
-            f"• **Asset Maintenance History** (e.g. `PRV-401`, `P-101A`, `F-101`, `DV-201`, `RIV-102`)\n"
-            f"• **P&ID Schematic & Defect Diagnostics** (e.g. `Analyze CDU-3 P&ID schematic`)\n"
-            f"• **Material Code Harmonization** (e.g. `Check vendor flange spec against MOP&NG standard`)\n"
-            f"• **MRPL Emergency SOPs** (e.g. `Emergency shutdown procedure for CDU`)"
+            f"### 💡 PRAHARI AI Assistant\n\n"
+            f"**Regarding your question**: *\"{q_clean}\"*\n\n"
+            f"I am ready to assist you! As your versatile assistant, you can ask me to:\n"
+            f"• ✍️ **Draft content**: Letters, emails, reports, documentation, or creative text.\n"
+            f"• 🧮 **Solve problems**: Step-by-step math, algebra, physics equations, and data conversions.\n"
+            f"• 💻 **Code & script**: Python automation, SQL queries, HTML/CSS, and JavaScript logic.\n"
+            f"• 🛡️ **Industrial engineering**: P&ID drawings, SOPs, equipment tags, and safety standards.\n\n"
+            f"Please let me know if you would like me to elaborate or take specific action on this topic!"
         )
 
     def _extract_citations(self, docs: List[Document]) -> List[Dict[str, Any]]:
