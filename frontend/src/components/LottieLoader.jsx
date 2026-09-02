@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Shield } from 'lucide-react';
+import { Brain } from 'lucide-react';
 
 export default function LottieLoader({ text = "Synthesizing response from local vector vault..." }) {
   return (
@@ -19,7 +19,7 @@ export default function LottieLoader({ text = "Synthesizing response from local 
         />
         {/* Center Icon */}
         <div className="z-10 text-white flex flex-col items-center">
-          <Shield className="w-4 h-4 text-zinc-300" />
+          <Brain className="w-4 h-4 text-cyan-400" />
         </div>
       </div>
 

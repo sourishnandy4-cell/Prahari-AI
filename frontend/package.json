@@ -1,7 +1,7 @@
 {
-  "name": "aegis-ai-frontend",
+  "name": "prahari-ai",
   "private": true,
-  "version": "2.7.2",
+  "version": "2.7.3",
   "type": "module",
   "description": "PRAHARI AI — Sovereign Industrial Safety Intelligence for MRPL",
   "author": "Aegis AI Team",

@@ -11,8 +11,7 @@ import {
   PanelLeftClose, 
   Upload, 
   RotateCcw,
-  Sparkles,
-  ShieldCheck
+  Sparkles
 } from 'lucide-react';
 
 export default function Sidebar({ 
@@ -31,6 +30,7 @@ export default function Sidebar({
   const [searchQuery, setSearchQuery] = useState('');
   const [editingSessionId, setEditingSessionId] = useState(null);
   const [editTitle, setEditTitle] = useState('');
+  const [sessionToDelete, setSessionToDelete] = useState(null);
 
   const filteredSessions = sessions.filter(s => 
     s.title?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -263,9 +263,7 @@ export default function Sidebar({
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    if (window.confirm('Delete this conversation?')) {
-                                      onDeleteSession?.(session.id);
-                                    }
+                                    setSessionToDelete(session);
                                   }}
                                   className="p-1 text-zinc-400 hover:text-rose-400 hover:bg-zinc-700/50 rounded transition-colors"
                                   title="Delete question"
@@ -326,10 +324,57 @@ export default function Sidebar({
             <span>Replay Intro</span>
           </button>
           <span className="text-[10px] text-slate-500 font-mono tracking-wider">
-          MRPL v2.7.2 • Sovereign AI
-        </span>
+            MRPL v2.7.3 • Sovereign AI
+          </span>
         </div>
       </div>
+
+      {/* In-App Custom Delete Confirmation Modal */}
+      {sessionToDelete && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm select-none animate-fadeIn"
+          onClick={() => setSessionToDelete(null)}
+        >
+          <div 
+            className="w-full max-w-sm rounded-2xl bg-zinc-900 border border-zinc-700/80 p-5 shadow-2xl space-y-4 animate-scaleUp"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 shrink-0">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-zinc-100">Delete Conversation?</h3>
+                <p className="text-xs text-zinc-400 mt-0.5">This chat history will be removed permanently.</p>
+              </div>
+            </div>
+
+            <div className="p-2.5 rounded-xl bg-zinc-950/80 border border-zinc-800 text-xs text-zinc-300 truncate font-mono">
+              {sessionToDelete.title || 'Untitled Session'}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setSessionToDelete(null)}
+                className="px-3.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs text-zinc-300 transition-colors font-medium cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onDeleteSession?.(sessionToDelete.id);
+                  setSessionToDelete(null);
+                }}
+                className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-xs text-white transition-colors font-medium cursor-pointer shadow-sm"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </aside>
   );
 }

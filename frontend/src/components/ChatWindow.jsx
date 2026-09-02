@@ -13,7 +13,6 @@ import {
   Mic, 
   MicOff, 
   PanelLeft, 
-  ShieldAlert, 
   Flame, 
   Wrench, 
   FileCheck,
@@ -47,14 +46,14 @@ const PROMPT_CARDS = [
     color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
   },
   {
-    icon: ShieldAlert,
+    icon: Brain,
     title: "Material Code Harmonization",
     desc: "Check if vendor submitted ASTM A105 flange meets MRPL PMS-300-SS sour service standards.",
     category: "MOP&NG Standards Agent",
     color: "text-purple-400 bg-purple-500/10 border-purple-500/20"
   },
   {
-    icon: ShieldAlert,
+    icon: Brain,
     title: "Near-Miss Precursor NLP",
     desc: "Screen recent field unsafe-act logs to flag high-consequence injury and fatality precursors.",
     category: "NLP Precursor Detection",
