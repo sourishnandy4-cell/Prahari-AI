@@ -84,19 +84,25 @@ class OfflineIntelligenceEngine:
                 "mode": "Sovereign Code Engine"
             }
 
-        # 6. Explicit Document / Attached File Analysis (ONLY when explicit intent or attachment context!)
+        # 6. Multimodal Vision & P&ID Schematic / Diagram / Image Reasoning
+        vision_res = multimodal_vision.analyze_image_context(q_clean)
+        if vision_res:
+            vision_res["answer"] = sovereign_guardrails.append_sovereign_footer(vision_res["answer"], q_clean)
+            return vision_res
+
+        # 7. Explicit Document / Attached File Analysis (ONLY when explicit document file is referenced or attached!)
         doc_analysis_res = self._check_document_analysis(q_clean, docs)
         if doc_analysis_res:
             doc_analysis_res["answer"] = sovereign_guardrails.append_sovereign_footer(doc_analysis_res["answer"], q_clean)
             return doc_analysis_res
 
-        # 7. Agentic Multi-Step Compound Workflows (Material Harmonization, Near-Miss Precursors, Compound Tasks)
+        # 8. Agentic Multi-Step Compound Workflows (Material Harmonization, Near-Miss Precursors, Compound Tasks)
         agentic_res = agentic_workflows.evaluate_agentic_task(q_clean, history)
         if agentic_res:
             agentic_res["answer"] = sovereign_guardrails.append_sovereign_footer(agentic_res["answer"], q_clean)
             return agentic_res
 
-        # 8. Asset & Equipment Maintenance History Registry (e.g. PRV-401, P-101A, F-101, DV-201, RIV-102)
+        # 9. Asset & Equipment Maintenance History Registry (e.g. PRV-401, P-101A, F-101, DV-201, RIV-102)
         asset_match = equipment_registry.lookup_asset(q_clean)
         if asset_match and any(k in q_lower for k in ["history", "maintenance", "spec", "status", "overhaul", "pop test", "calibration", "tag", "asset", "pump", "valve", "furnace", "reactor", "prv", "psv", "p-101"]):
             ans = equipment_registry.format_asset_report(asset_match)
@@ -113,12 +119,6 @@ class OfflineIntelligenceEngine:
                 ],
                 "mode": "Sovereign Asset Integrity & Maintenance Registry"
             }
-
-        # 9. Multimodal Vision & P&ID Schematic Reasoning
-        vision_res = multimodal_vision.analyze_image_context(q_clean)
-        if vision_res:
-            vision_res["answer"] = sovereign_guardrails.append_sovereign_footer(vision_res["answer"], q_clean)
-            return vision_res
 
         # 10. Grounded SOP Directives from Retrieved Chunks (ONLY when query is SOP-relevant!)
         if docs and self._is_sop_relevant(q_lower, docs):
@@ -152,27 +152,34 @@ class OfflineIntelligenceEngine:
     def _check_document_analysis(self, query: str, docs: List[Document]) -> Optional[Dict[str, Any]]:
         """
         Extracts, reads, and summarizes uploaded PDFs, text documents, or attachments.
-        CRITICAL BUG FIX: Only triggers when the user explicitly requests document analysis
-        or when a file was freshly attached in this turn. Unrelated subsequent queries in
-        the same chat will NOT trigger document summary.
+        CRITICAL: ONLY triggers when the user explicitly references an actual document file
+        (PDF, TXT, MD, DOCX, CSV) or attached a document in this turn.
+        NEVER triggers for attached images or visual diagram queries!
         """
         q_low = query.lower()
 
-        has_attachment_context = "[context: user attached" in q_low
+        # If user attached an image or asks about an image/diagram, pass through to multimodal vision!
+        has_image_attachment = bool(re.search(r'\[context:\s*user attached[^\n\]]*\.(?:png|jpg|jpeg|webp|bmp|gif|svg)', q_low))
+        is_visual_query = bool(re.search(r'\b(?:diagram|diagrams|drawing|schematic|p&id|pid|photo|photos|image|picture|blueprint|flowsheet)\b', q_low))
+        if has_image_attachment or (is_visual_query and not re.search(r'\b(?:pdf|document|docx|txt|md|csv)\b', q_low)):
+            return None
+
+        has_doc_attachment = bool(re.search(r'\[context:\s*user attached[^\n\]]*\.(?:pdf|txt|md|docx|csv|json)', q_low))
         explicit_analysis_keywords = [
-            "analyse this pdf", "analyze this pdf", "what is written", "summarize this pdf",
+            "analyse this pdf", "analyze this pdf", "what is written in this pdf", "summarize this pdf",
             "summarise this pdf", "read this pdf", "explain this pdf", "analyse this document",
             "analyze this document", "what does this document say", "what is this document about",
-            "tell me what is written", "summarize document", "analyse document", "analyze document",
-            "executive summary of", "overview of", "extract content from", "read document", "summarize file"
+            "tell me what is written in this document", "summarize document", "analyse document", "analyze document",
+            "executive summary of", "extract content from this pdf", "read document", "summarize file"
         ]
         is_explicit_analysis = any(k in q_low for k in explicit_analysis_keywords)
 
+        # Check if an explicit document filename is present
         match_fn = re.search(r'([\w\-\.]+\.(?:pdf|txt|md|docx|csv|json))', query, re.IGNORECASE)
         explicit_filename = match_fn.group(1) if match_fn else None
 
-        # If user did NOT attach a file, did NOT ask to analyze/summarize, and did NOT mention a document file, do NOT run document analysis!
-        if not (has_attachment_context or is_explicit_analysis or explicit_filename):
+        # If user did NOT attach a document file, did NOT ask to analyze a document, and did NOT mention a document file, do NOT run document analysis!
+        if not (has_doc_attachment or is_explicit_analysis or explicit_filename):
             return None
 
         target_filename = explicit_filename
@@ -183,33 +190,23 @@ class OfflineIntelligenceEngine:
             if os.path.exists(candidate_path):
                 target_filepath = candidate_path
 
-        # If attachment context or explicit analysis is requested and no explicit filename matched, find recent upload
-        if not target_filepath and (has_attachment_context or is_explicit_analysis) and os.path.exists(settings.UPLOAD_DIR):
-            files = [
-                os.path.join(settings.UPLOAD_DIR, f)
-                for f in os.listdir(settings.UPLOAD_DIR)
-                if os.path.isfile(os.path.join(settings.UPLOAD_DIR, f)) and f.lower().endswith(('.pdf', '.txt', '.md', '.csv'))
-            ]
-            if files:
-                files.sort(key=lambda x: os.path.getmtime(x), reverse=True)
-                target_filepath = files[0]
-                target_filename = os.path.basename(target_filepath)
-
-        # Fallback to docs only if explicit analysis requested
+        # If explicit analysis requested and filename in docs (excluding SOP)
         if not target_filepath and is_explicit_analysis and docs:
             for d in docs:
                 fn = d.metadata.get("filename", "")
                 if fn and fn != "MRPL_Refinery_Safety_SOP_2026.pdf":
-                    target_filename = fn
-                    target_filepath = d.metadata.get("filepath", os.path.join(settings.UPLOAD_DIR, fn))
-                    break
+                    cand = d.metadata.get("filepath", os.path.join(settings.UPLOAD_DIR, fn))
+                    if os.path.exists(cand):
+                        target_filename = fn
+                        target_filepath = cand
+                        break
 
         if not target_filepath or not os.path.exists(target_filepath):
             if is_explicit_analysis and not docs:
                 return {
                     "answer": (
                         "### 📄 Document Analysis\n\n"
-                        "Please attach or upload your document (PDF, TXT, MD, CSV, or Image) using the **`+` Attachment button** or drag and drop it into the chat window. "
+                        "Please attach or upload your document (PDF, TXT, MD, CSV) using the **`+` Attachment button** or drag and drop it into the chat window. "
                         "I will read, extract all clauses, and generate a comprehensive structural and executive analysis."
                     ),
                     "intent": "document_upload_prompt",
