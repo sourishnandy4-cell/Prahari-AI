@@ -11,11 +11,17 @@ from langchain_core.documents import Document
 from backend.app.config import settings
 from backend.app.services.hybrid_search import hybrid_retrieve
 from backend.app.services.offline_intelligence import offline_intelligence
+from backend.app.services.online_ai_service import (
+    is_internet_connected,
+    search_live_web,
+    call_gemini_cloud_llm,
+    synthesize_online_response,
+)
 
 
 # ── Prompts ────────────────────────────────────────────────────────────────────
 
-ANSWER_PROMPT = """You are PRAHARI AI, the sovereign on-premise AI assistant for Indian Standards (IS codes), Bureau of Indian Standards (BIS) Schemes (SIH Topic 26107), and Industrial Engineering & Operational Safety.
+ANSWER_PROMPT = """You are PRAHARI AI, the authoritative Virtual Assistant for Indian Standards (IS codes), Bureau of Indian Standards (BIS) Schemes (SIH Topic 26107), and Industrial Engineering & Operational Safety.
 
 Guidelines:
 1. When answering questions regarding Indian Standards (IS codes), BIS certification schemes (Scheme-I, CRS Scheme-II, FMCS), ISI mark verification, Gold/Silver hallmarking (6-digit HUID), consumer complaints, or quality control orders (QCO):
@@ -100,7 +106,7 @@ def _extract_citations(docs: List[Document]) -> List[Dict[str, Any]]:
     return citations
 
 
-# ── Core RAG Pipeline ──────────────────────────────────────────────────────────
+# ── Core Hybrid RAG Pipeline ──────────────────────────────────────────────────
 
 def query_rag_engine(
     query: str,
@@ -108,15 +114,22 @@ def query_rag_engine(
     document_filter: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
-    Main Universal Pipeline:
-      1. Hybrid Retrieval (Dense Vector + BM25Okapi with RRF)
-      2. If Ollama is online -> Run LLM RAG
-      3. If Ollama is offline -> Run Sovereign Offline Intelligence Engine
+    Main Universal Hybrid Pipeline (Online Cloud AI + Offline Neural Failover):
+      1. Check internet connectivity.
+      2. If online:
+         - Live Web Search (BIS notifications, QCOs, real-time standards)
+         - If Gemini configured: run Gemini 1.5/2.0 Flash
+         - If Ollama running: run Ollama augmented with real-time web context
+         - Else: synthesize live web search with standards database
+      3. If offline (or online times out):
+         - Hybrid Dense Vector + BM25Okapi local retrieval
+         - If Ollama running: run local Ollama neural model (llama3.2)
+         - Else: run Sovereign Offline Intelligence Engine (resilient air-gapped)
     """
     t_start = time.time()
     trace = []
 
-    # 1. Hybrid Retrieval
+    # 1. Local Hybrid Retrieval (Always available from SQLite/ChromaDB)
     docs = []
     try:
         docs = hybrid_retrieve(query, document_filter=document_filter)
@@ -124,7 +137,101 @@ def query_rag_engine(
     except Exception as e:
         trace.append({"step": "hybrid_retrieval", "error": str(e)})
 
-    # 2. Check if Ollama is online
+    # 2. Check Internet Connectivity for Online Mode
+    has_internet = is_internet_connected(timeout=0.8)
+    trace.append({"step": "network_status", "is_online": has_internet})
+
+    if has_internet:
+        context = _format_context(docs)
+        history_str = _format_history(session_history)
+
+        # A. Live Web Search for up-to-the-minute updates
+        web_snippets = search_live_web(query, max_results=4)
+        if web_snippets:
+            trace.append({"step": "live_web_search", "snippets_found": len(web_snippets)})
+
+        # B. Try Cloud Generative AI (Gemini 1.5/2.0)
+        cloud_answer = call_gemini_cloud_llm(query, context, web_snippets, history_str)
+        if cloud_answer:
+            trace.append({"step": "answer_generation", "mode": "Google Gemini (Cloud Neural AI)"})
+            citations = _extract_citations(docs) if docs else []
+            for w in web_snippets[:3]:
+                citations.append({
+                    "document": w.get("url", "Web"),
+                    "page": 1,
+                    "snippet": w.get("snippet", "")[:200] + "...",
+                    "standard": w.get("title", "")[:40],
+                    "clause": "Live Web Source",
+                })
+            return {
+                "query": query,
+                "rewritten_query": query,
+                "answer": cloud_answer,
+                "citations": citations,
+                "model": "Gemini 1.5 Flash (Online Cloud AI)",
+                "mode": "Online Cloud Neural AI",
+                "hops": 1,
+                "latency_ms": int((time.time() - t_start) * 1000),
+                "execution_trace": trace,
+            }
+
+        # C. If Ollama is available, augment Ollama with live web data
+        if is_ollama_available():
+            try:
+                llm = _get_llm()
+                aug_context = context
+                if web_snippets:
+                    aug_context += "\n\n--- Live Web Updates ---\n" + "\n".join(
+                        [f"- [{w['title']}]: {w['snippet']}" for w in web_snippets]
+                    )
+                prompt = ChatPromptTemplate.from_template(ANSWER_PROMPT)
+                chain = prompt | llm
+                result = chain.invoke({"context": aug_context, "query": query, "history": history_str})
+                answer_text = result.content.strip()
+                trace.append({"step": "answer_generation", "mode": f"Online Web-Augmented Ollama ({settings.LLM_MODEL})"})
+
+                citations = _extract_citations(docs) if docs else []
+                for w in web_snippets[:3]:
+                    citations.append({
+                        "document": w.get("url", "Web"),
+                        "page": 1,
+                        "snippet": w.get("snippet", "")[:200] + "...",
+                        "standard": w.get("title", "")[:40],
+                        "clause": "Live Web Source",
+                    })
+                return {
+                    "query": query,
+                    "rewritten_query": query,
+                    "answer": answer_text,
+                    "citations": citations,
+                    "model": f"{settings.LLM_MODEL} (Web-Augmented)",
+                    "mode": f"Online Web-Augmented LLM ({settings.LLM_MODEL})",
+                    "hops": 1,
+                    "latency_ms": int((time.time() - t_start) * 1000),
+                    "execution_trace": trace,
+                }
+            except Exception as err:
+                trace.append({"step": "online_ollama_fallback", "error": str(err)})
+
+        # D. Online Web Synthesis fallback
+        if web_snippets:
+            online_res = synthesize_online_response(query, docs, web_snippets)
+            trace.append({"step": "answer_generation", "mode": "Online Live Web Intelligence"})
+            citations = online_res["citations"] + (_extract_citations(docs) if docs else [])
+            return {
+                "query": query,
+                "rewritten_query": query,
+                "answer": online_res["answer"],
+                "citations": citations,
+                "model": "Live Web Synthesis Engine",
+                "mode": "Online Live Web Intelligence",
+                "hops": 1,
+                "latency_ms": int((time.time() - t_start) * 1000),
+                "execution_trace": trace,
+            }
+
+    # 3. Offline Mode (When device has NO internet or internet check timed out)
+    trace.append({"step": "offline_mode_active", "reason": "No internet connection or air-gapped mode"})
     ollama_ready = is_ollama_available()
 
     if ollama_ready:
@@ -140,7 +247,7 @@ def query_rag_engine(
                 "history": history_str,
             })
             answer_text = result.content.strip()
-            trace.append({"step": "answer_generation", "mode": f"Ollama LLM ({settings.LLM_MODEL})"})
+            trace.append({"step": "answer_generation", "mode": f"Local Offline Neural LLM ({settings.LLM_MODEL})"})
 
             citations = _extract_citations(docs) if docs else []
             return {
@@ -149,7 +256,7 @@ def query_rag_engine(
                 "answer": answer_text,
                 "citations": citations,
                 "model": settings.LLM_MODEL,
-                "mode": f"Sovereign LLM ({settings.LLM_MODEL})",
+                "mode": f"Offline Neural LLM ({settings.LLM_MODEL})",
                 "hops": 1,
                 "latency_ms": int((time.time() - t_start) * 1000),
                 "execution_trace": trace,
@@ -157,7 +264,7 @@ def query_rag_engine(
         except Exception as err:
             trace.append({"step": "llm_fallback_to_offline_engine", "error": str(err)})
 
-    # 3. Sovereign Offline Engine
+    # 4. Sovereign Offline Extractive Safety Engine (100% reliable fallback)
     res = offline_intelligence.answer_query(query, docs=docs, history=session_history)
     trace.append({"step": "answer_generation", "mode": res.get("mode", "Sovereign Offline Intelligence")})
 
