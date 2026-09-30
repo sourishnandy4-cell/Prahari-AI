@@ -58,6 +58,12 @@ def compile_fastapi_backend():
         f"--add-data={backend_pkg}{os.pathsep}backend",
         # Bundle the data directory (SOP PDF, vectorstore, uploads)
         f"--add-data={data_dir}{os.pathsep}data",
+        f"--add-data={os.path.join(PROJECT_ROOT, 'Indian_Standards_BIS_Compendium_2026.pdf')}{os.pathsep}.",
+        f"--add-data={os.path.join(PROJECT_ROOT, 'MRPL_Refinery_Safety_SOP_2026.pdf')}{os.pathsep}.",
+        # Hidden imports
+        "--hidden-import=reportlab",
+        "--hidden-import=reportlab.platypus",
+        "--hidden-import=reportlab.lib",
         # Include uvicorn CLI runner
         "--hidden-import=uvicorn.main",
         "--hidden-import=uvicorn.config",
