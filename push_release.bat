@@ -1,5 +1,5 @@
 @echo off
-set "PATH=C:\Users\AZIZ\AppData\Local\Programs\Git\cmd;C:\Users\AZIZ\AppData\Local\Programs\gh;%PATH%"
+set "PATH=C:\Users\AZIZ\AppData\Local\Programs\Git\cmd;C:\Program Files\GitHub CLI;C:\Users\AZIZ\AppData\Local\Programs\gh;%PATH%"
 title PRAHARI AI - Push ^& Publish v3.0.0
 cd /d "%~dp0"
 
