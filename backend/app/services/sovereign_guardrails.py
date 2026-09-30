@@ -20,14 +20,18 @@ class SovereignGuardrails:
         """
         q_lower = query.lower()
 
+        # Exclude benign calculation / unit conversion inquiries (e.g. "convert 90 bar to psi")
+        is_conversion_or_calc = bool(re.search(r'\b(?:convert|conversion|calculate|what is|how many|how much|formula|in psi|in kpa|in mpa|in atm)\b', q_lower))
+
         # 1. Unsafe override / bypass requests
         unsafe_patterns = [
             r'bypass.*esd', r'disable.*trip', r'override.*interlock', r'suppress.*alarm',
-            r'run.*90\s*bar', r'90\s*bar', r'ignore.*h2s', r'confined space without blind',
+            r'(?:run|operate|set|raise|increase|pressurize|hold|push|crank|bypass\s+to|bring\s+to)\s+.*90\s*bar',
+            r'ignore.*h2s', r'confined space without blind',
             r'bypass.*trip', r'bypass.*shutdown', r'override.*shutdown'
         ]
 
-        if any(re.search(pat, q_lower) for pat in unsafe_patterns):
+        if not is_conversion_or_calc and any(re.search(pat, q_lower) for pat in unsafe_patterns):
             return {
                 "answer": (
                     "### 🛑 SOVEREIGN SAFETY COMPLIANCE REFUSAL: ZERO-TOLERANCE TRIP VIOLATION\n\n"

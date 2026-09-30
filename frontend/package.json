@@ -1,9 +1,9 @@
 {
   "name": "prahari-ai",
   "private": true,
-  "version": "2.7.4",
+  "version": "3.0.0",
   "type": "module",
-  "description": "PRAHARI AI — Sovereign Industrial Safety Intelligence for MRPL",
+  "description": "PRAHARI AI — Sovereign Virtual Assistant for Indian Standards (IS Codes), BIS Schemes & Industrial Safety (SIH 26107)",
   "author": "Aegis AI Team",
   "main": "electron/main.cjs",
   "scripts": {

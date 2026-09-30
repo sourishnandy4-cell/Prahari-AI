@@ -125,11 +125,11 @@ export default function Sidebar({
                   PRAHARI
                 </span>
                 <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-zinc-900 text-cyan-400 border border-zinc-800">
-                  AI 3.2
+                  SIH 26107
                 </span>
               </div>
               <p className="text-[10px] text-zinc-400 font-sans tracking-wide">
-                Sovereign Safety Assistant
+                IS Codes & BIS Scheme Assistant
               </p>
             </div>
           </div>
@@ -294,7 +294,7 @@ export default function Sidebar({
         >
           <div className="flex items-center gap-2">
             <Upload className="w-3.5 h-3.5 text-zinc-400 group-hover:text-cyan-400" />
-            <span className="font-medium">Ingest SOP Manual</span>
+            <span className="font-medium">Ingest IS Code / SOP</span>
           </div>
           <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-zinc-800 text-zinc-400 border border-zinc-700/50">
             PDF/RAG
@@ -310,7 +310,7 @@ export default function Sidebar({
             </span>
             <span className="text-zinc-300 font-sans text-xs">Offline Sovereign</span>
           </div>
-          <span className="text-[10px] text-zinc-400">Sovereign AI</span>
+          <span className="text-[10px] text-zinc-400">BIS Agent</span>
         </div>
 
         {/* Replay Intro Link */}
@@ -324,7 +324,7 @@ export default function Sidebar({
             <span>Replay Intro</span>
           </button>
           <span className="text-[10px] text-slate-500 font-mono tracking-wider">
-            MRPL v2.7.4 • Sovereign AI
+            SIH 26107 • BIS Schemes
           </span>
         </div>
       </div>

@@ -9,8 +9,8 @@ cd /d "%~dp0"
 
 echo.
 echo  ╔══════════════════════════════════════════════════════════╗
-echo  ║        PRAHARI AI — Sovereign Industrial Safety AI        ║
-echo  ║            Desktop Application Launcher v2.1              ║
+echo  ║  PRAHARI AI — Indian Standards (BIS) & Industrial Safety  ║
+echo  ║       Desktop Application Launcher v3.0.0 (SIH 26107)    ║
 echo  ╚══════════════════════════════════════════════════════════╝
 echo.
 
@@ -41,10 +41,9 @@ echo [3/2] Launching PRAHARI AI Desktop window...
 cd frontend
 call npx electron .
 
-REM ── Cleanup: kill backend when Electron closes ─────────────────────────────
+REM ── Cleanup: kill backend on port 8000 when Electron closes ─────────────────
 echo.
-echo [Done] PRAHARI AI closed. Shutting down backend...
-taskkill /f /im python.exe 2>nul
-taskkill /f /im uvicorn.exe 2>nul
-echo [Done] All processes stopped.
+echo [Done] PRAHARI AI closed. Shutting down backend on port 8000...
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr :8000 ^| findstr LISTENING') do taskkill /f /pid %%a 2>nul
+echo [Done] All application processes stopped.
 

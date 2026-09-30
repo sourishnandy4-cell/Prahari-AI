@@ -1,3 +1,3 @@
-import SmokeReveal from './SmokeReveal';
+import FluidSmokeCanvas from './FluidSmokeCanvas';
 
-export default SmokeReveal;
+export default FluidSmokeCanvas;

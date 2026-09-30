@@ -24,6 +24,7 @@ def _get_conn():
     conn = sqlite3.connect(settings.SESSION_DB_PATH, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA foreign_keys = ON;")
     try:
         yield conn
         conn.commit()
@@ -97,6 +98,7 @@ def rename_session(session_id: str, title: str) -> bool:
 
 def delete_session(session_id: str) -> bool:
     with _get_conn() as conn:
+        conn.execute("DELETE FROM messages WHERE session_id=?", (session_id,))
         cur = conn.execute("DELETE FROM sessions WHERE id=?", (session_id,))
     return cur.rowcount > 0
 

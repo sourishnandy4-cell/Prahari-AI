@@ -15,16 +15,19 @@ from backend.app.services.offline_intelligence import offline_intelligence
 
 # ── Prompts ────────────────────────────────────────────────────────────────────
 
-ANSWER_PROMPT = """You are PRAHARI AI, the sovereign on-premise industrial safety and intelligence assistant for MRPL (Mangalore Refinery and Petrochemicals Limited).
-
-You are a versatile, highly intelligent AI assistant that answers all questions accurately, whether they are casual greetings, general knowledge, math calculations, code generation, or refinery Standard Operating Procedures (SOPs).
+ANSWER_PROMPT = """You are PRAHARI AI, the sovereign on-premise AI assistant for Indian Standards (IS codes), Bureau of Indian Standards (BIS) Schemes (SIH Topic 26107), and Industrial Engineering & Operational Safety.
 
 Guidelines:
-1. If the user asks a greeting, small talk, identity, math, general science, or coding question, answer naturally, helpfully, and authoritatively like a modern, capable AI.
-2. When the query relates to MRPL refinery safety, operating procedures, emergency shutdowns, H2S limits, PSV testing, or hazardous zone permits, strictly ground your response in the provided MRPL SOP context and present safety-critical parameters (e.g. bar, ppm, LEL %, PPE, valve tags) clearly with bullet points and bold highlights.
-3. If the context does not contain the answer to a general question, answer from your general knowledge.
+1. When answering questions regarding Indian Standards (IS codes), BIS certification schemes (Scheme-I, CRS Scheme-II, FMCS), ISI mark verification, Gold/Silver hallmarking (6-digit HUID), consumer complaints, or quality control orders (QCO):
+   - ALWAYS name the exact Standard Number (e.g. IS 10500:2012, IS 14543:2004, IS 1293:2019, IS 1786:2008, IS 1417:2016) and the specific Clause it came from.
+   - For industry Q&A ('Which IS standard applies to my product?' or 'What testing is needed?'), state the exact standard, QCO compliance status, and mandatory routine/type tests.
+   - For consumer Q&A, explain ISI mark checks (7-digit CML number), Gold Hallmark verification (3 marks: BIS logo, Fineness, 6-digit HUID), and complaint process via the BIS Care App and National Consumer Helpline (1800-11-1255 / 1915).
+   - If the user asks in Hindi, answer in clear, polite Hindi with accurate technical terminology.
+   - "I don't know" handling: If the answer is not in the documents or repository, explicitly state so and point to the BIS Toll-Free Helpline (1800-11-1255) and official portal (www.bis.gov.in) instead of guessing.
+2. When the query relates to MRPL refinery safety, emergency shutdowns, H2S limits, PSV testing, or hazardous zone permits, strictly ground your response in the provided MRPL SOP context.
+3. If the user asks a greeting, math, general science, or coding question, answer naturally, helpfully, and authoritatively.
 
---- Context from MRPL Industrial Manuals ---
+--- Context from Searchable Standards & Manuals Knowledge Base ---
 {context}
 
 --- Conversation History ---
@@ -139,7 +142,7 @@ def query_rag_engine(
             answer_text = result.content.strip()
             trace.append({"step": "answer_generation", "mode": f"Ollama LLM ({settings.LLM_MODEL})"})
 
-            citations = _extract_citations(docs) if docs and offline_intelligence._is_sop_relevant(query.lower(), docs) else []
+            citations = _extract_citations(docs) if docs else []
             return {
                 "query": query,
                 "rewritten_query": query,
@@ -164,6 +167,8 @@ def query_rag_engine(
         "rewritten_query": query,
         "answer": res["answer"],
         "citations": res.get("citations", []),
+        "follow_up_options": res.get("follow_up_options", []),
+        "intent": res.get("intent", ""),
         "model": "Sovereign Offline Intelligence Engine",
         "mode": res.get("mode", "100% Offline Air-Gapped"),
         "hops": 1 if docs else 0,
@@ -217,7 +222,7 @@ async def stream_rag_response(
                 full_text += token
                 yield f"data: {_json.dumps({'type': 'token', 'text': token})}\n\n"
 
-            citations = _extract_citations(docs) if docs and offline_intelligence._is_sop_relevant(query.lower(), docs) else []
+            citations = _extract_citations(docs) if docs else []
             latency_ms = int((time.time() - t_start) * 1000)
             yield f"data: {_json.dumps({'type': 'done', 'rewritten_query': query, 'citations': citations, 'model': settings.LLM_MODEL, 'latency_ms': latency_ms})}\n\n"
             return
@@ -228,6 +233,9 @@ async def stream_rag_response(
     offline_res = offline_intelligence.answer_query(query, docs=docs, history=session_history)
     answer_text = offline_res["answer"]
     citations = offline_res.get("citations", [])
+    follow_up_options = offline_res.get("follow_up_options", [])
+    intent = offline_res.get("intent", "")
+    model_name = offline_res.get("mode", "Sovereign Offline Intelligence Engine")
 
     # Stream text in small rhythmic token chunks for a smooth real-time visual experience
     words = re.split(r'(\s+)', answer_text)
@@ -237,4 +245,4 @@ async def stream_rag_response(
         await asyncio.sleep(0.012)
 
     latency_ms = int((time.time() - t_start) * 1000)
-    yield f"data: {_json.dumps({'type': 'done', 'rewritten_query': query, 'citations': citations, 'model': 'Sovereign Offline Intelligence Engine', 'latency_ms': latency_ms})}\n\n"
+    yield f"data: {_json.dumps({'type': 'done', 'rewritten_query': query, 'citations': citations, 'follow_up_options': follow_up_options, 'intent': intent, 'model': model_name, 'latency_ms': latency_ms})}\n\n"

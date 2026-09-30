@@ -14,6 +14,7 @@ from fastapi import APIRouter, UploadFile, File, HTTPException
 
 from backend.app.config import settings
 from backend.app.services.ingest_service import ingest_pdf_manual
+from backend.app.services.hybrid_search import invalidate_bm25_cache
 from backend.app.services.document_manager import (
     register_document,
     list_documents,
@@ -65,6 +66,7 @@ async def upload_document(file: UploadFile = File(...)):
                 total_chunks=result["total_chunks_indexed"],
                 file_size_kb=result["file_size_kb"],
             )
+            invalidate_bm25_cache()
             return {**result, "doc_id": doc.get("id", doc_id), "type": "pdf"}
 
         # Ingest Text/Markdown/CSV/JSON
@@ -117,6 +119,7 @@ async def upload_document(file: UploadFile = File(...)):
                 total_chunks=result["total_chunks_indexed"],
                 file_size_kb=result["file_size_kb"],
             )
+            invalidate_bm25_cache()
             return {**result, "doc_id": doc.get("id", doc_id)}
 
         # Image Attachments
@@ -164,6 +167,7 @@ async def delete_doc(doc_id: str):
     result = await asyncio.to_thread(delete_document, doc_id)
     if not result.get("success"):
         raise HTTPException(status_code=500, detail=result.get("error", "Deletion failed"))
+    invalidate_bm25_cache()
     return result
 
 
@@ -176,4 +180,5 @@ async def reindex_doc(doc_id: str):
     result = await asyncio.to_thread(reindex_document, doc_id)
     if result.get("status") == "error":
         raise HTTPException(status_code=500, detail=result.get("message", "Re-indexing failed"))
+    invalidate_bm25_cache()
     return result

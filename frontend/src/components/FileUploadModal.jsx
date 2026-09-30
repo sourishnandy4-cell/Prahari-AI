@@ -20,7 +20,7 @@ export default function FileUploadModal({ isOpen, onClose, onIngestSuccess, inde
 
   const processFile = async (file) => {
     if (!file.name.endsWith('.pdf')) {
-      setErrorMsg('Only PDF refinery manuals are supported.');
+      setErrorMsg('Only PDF Indian Standards or SOP manuals are supported.');
       return;
     }
 
@@ -118,10 +118,10 @@ export default function FileUploadModal({ isOpen, onClose, onIngestSuccess, inde
                 )}
 
                 <p className="text-xs font-medium text-zinc-200">
-                  {uploading ? uploadProgress : 'Drop SOP manual PDF here, or click to browse'}
+                  {uploading ? uploadProgress : 'Drop Indian Standard (IS Code) or SOP PDF here, or click to browse'}
                 </p>
                 <p className="text-[10px] text-zinc-500 font-mono">
-                  Extracts text, builds ChromaDB vector embeddings
+                  Extracts clauses, builds ChromaDB vector embeddings & search index
                 </p>
               </div>
             </div>

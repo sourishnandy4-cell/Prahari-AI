@@ -16,31 +16,45 @@ from backend.app.routes import (
     sessions_router,
     documents_router,
     telemetry_router,
+    bis_router,
 )
 
 
 # ── Lifespan (replaces deprecated @app.on_event) ───────────────────────────────
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Initialize SQLite tables and auto-seed default MRPL SOP if empty."""
+    """Initialize SQLite tables and auto-seed default MRPL SOP & BIS Standards if empty."""
     init_db()
     init_document_table()
 
-    # Ensure default SOP PDF exists on disk
+    # 1. Ensure default SOP PDF exists on disk
     if not os.path.exists(settings.DEFAULT_SOP_PATH):
         try:
             from backend.app.create_sample_sop import generate_mrpl_safety_pdf
-            print(f"[Aegis Startup] Pre-generating default SOP PDF: {settings.DEFAULT_SOP_PATH}")
+            print(f"[Startup] Pre-generating default MRPL SOP PDF: {settings.DEFAULT_SOP_PATH}")
             generate_mrpl_safety_pdf(settings.DEFAULT_SOP_PATH)
         except Exception as e:
-            print(f"[Aegis Startup] Warning generating default SOP PDF: {e}")
+            print(f"[Startup] Warning generating default SOP PDF: {e}")
 
-    # Auto-seed default MRPL SOP if catalog is empty and file exists
-    if settings.AUTO_SEED_DEFAULT_SOP and os.path.exists(settings.DEFAULT_SOP_PATH):
+    # 2. Ensure BIS Standards Compendium PDF exists on disk
+    if not os.path.exists(settings.DEFAULT_BIS_PATH):
         try:
-            existing = list_documents()
-            if not existing:
-                print(f"[Aegis Startup] Auto-indexing default SOP: {settings.DEFAULT_SOP_PATH}")
+            from backend.app.create_sample_bis_compendium import generate_bis_compendium_pdf
+            print(f"[Startup] Pre-generating BIS Standards Compendium PDF: {settings.DEFAULT_BIS_PATH}")
+            generate_bis_compendium_pdf(settings.DEFAULT_BIS_PATH)
+        except Exception as e:
+            print(f"[Startup] Warning generating BIS Compendium PDF: {e}")
+
+    # Auto-seed documents into catalog & vectorstore
+    try:
+        existing = list_documents()
+        existing_filenames = [d["filename"] for d in existing]
+
+        # Auto-seed default MRPL SOP
+        if settings.AUTO_SEED_DEFAULT_SOP and os.path.exists(settings.DEFAULT_SOP_PATH):
+            sop_name = os.path.basename(settings.DEFAULT_SOP_PATH)
+            if sop_name not in existing_filenames:
+                print(f"[Startup] Auto-indexing default MRPL SOP: {settings.DEFAULT_SOP_PATH}")
                 result = ingest_pdf_manual(settings.DEFAULT_SOP_PATH)
                 register_document(
                     doc_id=str(uuid.uuid4()),
@@ -50,9 +64,25 @@ async def lifespan(app: FastAPI):
                     total_chunks=result["total_chunks_indexed"],
                     file_size_kb=result["file_size_kb"],
                 )
-                print(f"[Aegis Startup] Predefined SOP indexed successfully ({result['total_chunks_indexed']} chunks).")
-        except Exception as e:
-            print(f"[Aegis Startup] Warning auto-seeding default SOP: {e}")
+                print(f"[Startup] Predefined SOP indexed ({result['total_chunks_indexed']} chunks).")
+
+        # Auto-seed BIS Standards Compendium
+        if settings.AUTO_SEED_BIS_STANDARDS and os.path.exists(settings.DEFAULT_BIS_PATH):
+            bis_name = os.path.basename(settings.DEFAULT_BIS_PATH)
+            if bis_name not in existing_filenames:
+                print(f"[Startup] Auto-indexing BIS Standards Compendium: {settings.DEFAULT_BIS_PATH}")
+                bis_result = ingest_pdf_manual(settings.DEFAULT_BIS_PATH)
+                register_document(
+                    doc_id=str(uuid.uuid4()),
+                    filename=bis_result["filename"],
+                    filepath=bis_result["filepath"],
+                    total_pages=bis_result["total_pages"],
+                    total_chunks=bis_result["total_chunks_indexed"],
+                    file_size_kb=bis_result["file_size_kb"],
+                )
+                print(f"[Startup] BIS Standards Compendium indexed ({bis_result['total_chunks_indexed']} chunks).")
+    except Exception as e:
+        print(f"[Startup] Warning auto-seeding documents: {e}")
 
     yield  # App runs here
     # (Shutdown logic can go here if needed)
@@ -102,6 +132,7 @@ app.include_router(stream_router,    prefix="/api", tags=["Streaming (SSE)"])
 app.include_router(sessions_router,  prefix="/api", tags=["Sessions"])
 app.include_router(documents_router, prefix="/api", tags=["Documents"])
 app.include_router(telemetry_router, prefix="/api", tags=["Telemetry"])
+app.include_router(bis_router,       prefix="/api", tags=["BIS Standards"])
 
 
 # ── Root ───────────────────────────────────────────────────────────────────────
@@ -109,18 +140,26 @@ app.include_router(telemetry_router, prefix="/api", tags=["Telemetry"])
 async def root():
     return {
         "system": settings.PROJECT_NAME,
+        "sih_problem": "26107 - AI Virtual Assistant for Indian Standards & BIS Schemes",
         "version": settings.VERSION,
         "status": "online",
-        "mode": "100% Offline / Air-Gapped",
+        "mode": "Dual Engine (Local Ollama + Sovereign Offline Intelligence)",
         "docs": "/docs",
         "endpoints": {
-            "health":    "GET  /api/health",
-            "ping":      "GET  /api/ping",
-            "chat":      "POST /api/chat",
-            "stream":    "GET  /api/stream?query=...",
-            "sessions":  "CRUD /api/sessions",
-            "documents": "CRUD /api/documents",
-            "telemetry": "GET  /api/telemetry",
+            "health":     "GET  /api/health",
+            "ping":       "GET  /api/ping",
+            "chat":       "POST /api/chat",
+            "stream":     "GET  /api/stream?query=...",
+            "sessions":   "CRUD /api/sessions",
+            "documents":  "CRUD /api/documents",
+            "telemetry":  "GET  /api/telemetry",
+            "bis_standards": "GET /api/bis/standards",
+            "bis_categories": "GET /api/bis/categories",
+            "bis_compare": "POST /api/bis/compare",
+            "bis_huid": "POST /api/bis/verify-huid",
+            "bis_cml": "POST /api/bis/verify-cml",
+            "bis_steps": "GET /api/bis/certification-steps",
+            "bis_helpline": "GET /api/bis/helpline",
         }
     }
 

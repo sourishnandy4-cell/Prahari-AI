@@ -1,39 +1,36 @@
-# 🛡️ PRAHARI AI (Aegis Sovereign Intelligence)
+# 🛡️ PRAHARI AI (v3.0.0 — SIH Topic 26107 Edition)
 
-[![Release](https://img.shields.io/github/v/release/sourishnandy4-cell/Aegis-AI?color=blue&label=Latest%20Release)](https://github.com/sourishnandy4-cell/Aegis-AI/releases/latest)
-[![Android](https://img.shields.io/badge/Platform-Android%20%7C%20Windows-brightgreen)](https://github.com/sourishnandy4-cell/Aegis-AI/releases/latest)
+[![Release](https://img.shields.io/github/v/release/sourishnandy4-cell/Prahari-AI?color=blue&label=Latest%20Release)](https://github.com/sourishnandy4-cell/Prahari-AI/releases/latest)
+[![Platform: Web | Windows | Android](https://img.shields.io/badge/Platform-Web%20%7C%20Windows%20%7C%20Android-brightgreen)](https://github.com/sourishnandy4-cell/Prahari-AI/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> **Sovereign On-Premise Industrial Safety & Agentic RAG Web Application**
-> *Engineered for High-Reliability Operations at Mangalore Refinery and Petrochemicals Limited (MRPL).*
+> **Sovereign AI Virtual Assistant for Indian Standards (IS Codes), BIS Schemes & Industrial Safety**  
+> *Built for Smart India Hackathon (SIH Topic 26107) & High-Reliability Operations at Mangalore Refinery and Petrochemicals Limited (MRPL).*
 
 ---
 
-## 📦 Downloads & Releases (v2.7.4)
+## 🌟 What's New in v3.0.0 (SIH Topic 26107)
 
-| Platform | Package | Size | Direct Download |
-| :--- | :--- | :--- | :--- |
-| 📱 **Android Mobile** | `PRAHARI-AI-v2.7.4.apk` | 70.1 MB | [📥 Download APK](https://github.com/sourishnandy4-cell/Aegis-AI/releases/download/v2.7.4/PRAHARI-AI-v2.7.4.apk) |
-| 🖥️ **Windows (Installer)** | `PRAHARI-AI-Setup-v2.7.4.exe` | 261.6 MB | [📥 Download Setup](https://github.com/sourishnandy4-cell/Aegis-AI/releases/download/v2.7.4/PRAHARI-AI-Setup-v2.7.4.exe) |
-| ⚡ **Windows (Portable)** | `PRAHARI-AI-Portable-v2.7.4.exe` | 261.2 MB | [📥 Download Portable](https://github.com/sourishnandy4-cell/Aegis-AI/releases/download/v2.7.4/PRAHARI-AI-Portable-v2.7.4.exe) |
-
-*Full release notes and checksums are available on the [GitHub Releases Page](https://github.com/sourishnandy4-cell/Aegis-AI/releases/tag/v2.7.4).*
-
----
-
-## 🌟 Overview
-
-**PRAHARI AI** is a sovereign, 100% offline industrial safety and general intelligence web application. It combines **Dense Semantic Retrieval** (ChromaDB) with **Sparse Lexical Search** (BM25 Okapi) using **Reciprocal Rank Fusion (RRF)**, powered by a dual-engine architecture:
-1. **Local LLM Engine** (Ollama: `llama3.2`, `mistral`, `qwen2.5`, `phi3`)
-2. **Sovereign Offline Intelligence Brain** (100% air-gapped fallback for general queries, calculations, code assistance, and SOP grounding)
+1. **🏛️ Standards Document Ingestion**: Ingests Indian Standards (IS Codes) and BIS Scheme regulatory documents into a searchable hybrid knowledge base (ChromaDB + BM25 Okapi).
+2. **📌 Retrieval with Verified Citations**: Every single answer names the exact Standard number (e.g., `IS 1786:2008`, `IS 10500:2012`, `IS 1417:2016`, `IS 269:2015`) and the specific Clause it originated from.
+3. **🏭 Industry Q&A Portal**: Answers *"Which IS standard applies to my product?"*, *"What testing is needed under SIT?"*, and mandatory Quality Control Order (QCO) requirements.
+4. **👥 Consumer Q&A Portal**: Comprehensive verification guides for authentic ISI Marks (7-digit CML numbers), Gold Hallmarks (6-digit HUID tracking via BIS Care App), and formal complaint filing.
+5. **🌐 Bilingual Support (English + हिन्दी)**: Native support for English and Hindi queries and answers with automatic Devanagari script detection and one-click language toggle (`EN` / `हिन्दी`).
+6. **📋 Step-by-Step Certification Guidance**: Interactive 6-step walkthrough for Scheme-I (ISI Mark) and Scheme-II (CRS) with a mandatory 8-document checklist.
+7. **❓ Intelligent Follow-Up Clarifications**: Disambiguates vague queries (e.g., *"water"*, *"steel"*, *"cable"*) into targeted product sub-types.
+8. **⚖️ Standards Comparison Engine**: Side-by-side technical comparison tables (e.g., `IS 10500 vs IS 14543`, `IS 1786 vs IS 2062`).
+9. **🛡️ Safe Refusal Guardrails**: Automatically identifies unindexed or out-of-scope queries and refuses speculation, directing users to the official BIS National Helpline (`1800-11-1255` / `1915`) and `www.bis.gov.in`.
+10. **🎙️ Voice Recognition**: Dual-language voice input via Web Speech API (`en-IN` & `hi-IN`).
+11. **🔄 Zero-Retraining Ingestion**: Dynamic upload mechanism allowing new PDF standards to be ingested instantly into the live RAG vector store without model retraining.
 
 ---
 
-## ✨ Key Features
+## ✨ Key Capabilities
 
-- **🛡️ 100% Offline & Air-Gapped**: Zero external cloud API calls required. Complete data sovereignty and security.
-- **⚡ Universal Technical AI**: Answers general knowledge, calculations (`bar <-> psi`, `°C <-> °F`, percentages), and programming questions (Python, JavaScript, SQL, Bash, Regex).
-- **📚 Predefined SOP Knowledge**: Pre-seeded with a comprehensive 10-section MRPL 2026 Industrial Safety Manual:
+- **🛡️ 100% Offline & Air-Gapped**: Sovereign local execution with zero cloud dependencies.
+- **📚 Dual-Corpus Knowledge Base**: Pre-seeded with both the **Indian Standards BIS Compendium (2026)** and the **MRPL Industrial Safety SOP (2026)**.
+- **⚡ Universal Technical AI**: Solves engineering unit conversions (`bar <-> psi`, `°C <-> °F`), math problems, and script automation.
+- **🌐 Real-Time Streaming (SSE)**: Token-by-token generation with interactive citation badges and latency telemetry.
   - Crude Distillation Unit (CDU-1/2/3) Emergency Shutdown Procedures
   - Hydrogen Sulfide ($H_2S$) Toxic Gas Exposure Limits (TWA, STEL, IDLH, SCBA, Muster C-4)
   - Pressure Safety Valve (PSV/PRV) Recertification & Pop Test Tolerances (API 576, OISD-132)

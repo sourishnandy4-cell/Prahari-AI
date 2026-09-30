@@ -1,9 +1,30 @@
 import os
+import time
 from typing import List, Dict, Any, Optional
 from rank_bm25 import BM25Okapi
 from langchain_core.documents import Document
 from backend.app.config import settings
 from backend.app.services.ingest_service import get_vectorstore
+
+
+# ── In-Memory BM25 Index Cache ────────────────────────────────────────────────
+_bm25_cache = {
+    "corpus_docs": [],
+    "bm25_instance": None,
+    "last_count": -1,
+    "last_updated": 0.0,
+}
+
+
+def invalidate_bm25_cache() -> None:
+    """Invalidates the in-memory BM25 index cache when documents are modified."""
+    global _bm25_cache
+    _bm25_cache = {
+        "corpus_docs": [],
+        "bm25_instance": None,
+        "last_count": -1,
+        "last_updated": 0.0,
+    }
 
 
 def _rrf_score(rank: int, k: int = 60) -> float:
@@ -21,8 +42,9 @@ def hybrid_retrieve(
     Hybrid Search: Dense Vector Retrieval (ChromaDB) + Global Sparse Lexical Search (BM25)
     fused using Reciprocal Rank Fusion (RRF).
 
-    Searches the entire document corpus using BM25 and combines with Dense semantic vectors.
+    Caches the BM25 index in memory to avoid full-corpus re-tokenization on every retrieval.
     """
+    global _bm25_cache
     if k is None:
         k = settings.RETRIEVAL_K
     if bm25_weight is None:
@@ -31,25 +53,43 @@ def hybrid_retrieve(
     vectorstore = get_vectorstore()
     fetch_k = max(k * 4, 16)
 
-    # ── 1. Fetch All Available Chunks from ChromaDB Collection for Global BM25 ──
-    all_corpus_docs: List[Document] = []
+    # ── 1. Fetch & Cache Corpus Chunks for BM25 ─────────────────────────────────
+    current_count = -1
     try:
-        raw_collection = vectorstore._collection.get()
-        if raw_collection and raw_collection.get("documents"):
-            for idx, doc_text in enumerate(raw_collection["documents"]):
-                meta = raw_collection["metadatas"][idx] if raw_collection.get("metadatas") else {}
-                doc = Document(page_content=doc_text, metadata=meta)
-                # Apply document_filter if present
-                if document_filter:
-                    df_lower = document_filter.lower()
-                    fn = meta.get("filename", "").lower()
-                    fp = meta.get("filepath", "").lower()
-                    src = meta.get("source", "").lower()
-                    if df_lower not in fn and df_lower not in fp and df_lower not in src:
-                        continue
-                all_corpus_docs.append(doc)
+        current_count = vectorstore._collection.count()
     except Exception:
         pass
+
+    cache_valid = (
+        _bm25_cache["bm25_instance"] is not None
+        and _bm25_cache["last_count"] == current_count
+        and current_count > 0
+    )
+
+    if cache_valid:
+        all_corpus_docs = _bm25_cache["corpus_docs"]
+        bm25 = _bm25_cache["bm25_instance"]
+    else:
+        all_corpus_docs = []
+        try:
+            raw_collection = vectorstore._collection.get()
+            if raw_collection and raw_collection.get("documents"):
+                for idx, doc_text in enumerate(raw_collection["documents"]):
+                    meta = raw_collection["metadatas"][idx] if raw_collection.get("metadatas") else {}
+                    all_corpus_docs.append(Document(page_content=doc_text, metadata=meta))
+        except Exception:
+            pass
+
+        if all_corpus_docs:
+            corpus = [doc.page_content for doc in all_corpus_docs]
+            tokenized = [text.lower().split() for text in corpus]
+            bm25 = BM25Okapi(tokenized)
+            _bm25_cache["corpus_docs"] = all_corpus_docs
+            _bm25_cache["bm25_instance"] = bm25
+            _bm25_cache["last_count"] = current_count
+            _bm25_cache["last_updated"] = time.time()
+        else:
+            bm25 = None
 
     # If no documents in database, return empty
     if not all_corpus_docs:
@@ -98,10 +138,7 @@ def hybrid_retrieve(
     if not query_tokens:
         query_tokens = query.lower().split()
 
-    if all_corpus_docs and query_tokens:
-        corpus = [doc.page_content for doc in all_corpus_docs]
-        tokenized = [text.lower().split() for text in corpus]
-        bm25 = BM25Okapi(tokenized)
+    if bm25 and query_tokens:
         bm25_scores = bm25.get_scores(query_tokens)
 
         # Sort all corpus documents by BM25 score
@@ -110,7 +147,20 @@ def hybrid_retrieve(
             key=lambda x: bm25_scores[x[0]],
             reverse=True
         )
-        bm25_ranked = [all_corpus_docs[idx] for idx, _ in bm25_indexed[:fetch_k]]
+        if document_filter:
+            df_lower = document_filter.lower()
+            filtered = []
+            for idx, _ in bm25_indexed:
+                d = all_corpus_docs[idx]
+                if (df_lower in d.metadata.get("filename", "").lower()
+                    or df_lower in d.metadata.get("filepath", "").lower()
+                    or df_lower in d.metadata.get("source", "").lower()):
+                    filtered.append(d)
+                if len(filtered) >= fetch_k:
+                    break
+            bm25_ranked = filtered
+        else:
+            bm25_ranked = [all_corpus_docs[idx] for idx, _ in bm25_indexed[:fetch_k]]
     else:
         bm25_ranked = all_corpus_docs[:fetch_k]
 

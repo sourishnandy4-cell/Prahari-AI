@@ -26,13 +26,20 @@ class MultimodalVisionEngine:
         q_lower = q_clean.lower()
         images = image_metadata or []
 
-        # Check for image file attachments in query context
-        has_image_attachment = bool(re.search(r'\[context:\s*user attached[^\n\]]*\.(?:png|jpg|jpeg|webp|bmp|gif|svg)', q_lower))
+        # Check for image file attachments in query context or metadata
+        has_image_attachment = bool(re.search(r'\[context:\s*user attached[^\n\]]*\.(?:png|jpg|jpeg|webp|bmp|gif|svg)', q_lower)) or bool(images)
 
-        # Check if query references diagrams, P&ID, schematics, defect photos, or inspection logs
-        is_pid = bool(re.search(r'\b(?:p&id|pid|drawing|schematic|blueprint|flowsheet|diagram|diagrams|flow diagram|process flow|piping and instrumentation|vessel|tank|storage|valve|loop)\b', q_lower)) or (has_image_attachment and any(k in q_lower for k in ["diagram", "explain", "analyse", "analyze", "p&id", "pid", "what is", "drawing", "schematic"]))
-        is_defect = bool(re.search(r'\b(?:defect|corrosion|pitting|leak|rust|crack|damage|wear|weeping|photo|photos|image|picture|visual inspection|equipment photo)\b', q_lower))
-        is_checklist = bool(re.search(r'\b(?:checklist|handwritten|scanned|operator log|round sheet|inspection sheet|ocr)\b', q_lower))
+        # Check if query explicitly references technical diagrams, blueprints, or attached visuals
+        has_explicit_diagram = bool(re.search(r'\b(?:p&id drawing|p&id diagram|schematic diagram|piping and instrumentation diagram|process flowsheet|process flow diagram|blueprint)\b', q_lower))
+        has_explicit_visual_ref = bool(re.search(r'\b(?:in this image|in this photo|in this diagram|in this drawing|see attached|attached picture|attached drawing|attached photo|look at the image|inspect the photo)\b', q_lower))
+
+        # Only trigger visual/schematic reasoning if an image is attached OR the user explicitly asked for schematic/drawing interpretation
+        if not (has_image_attachment or has_explicit_diagram or has_explicit_visual_ref):
+            return None
+
+        is_pid = has_explicit_diagram or (has_image_attachment and any(k in q_lower for k in ["diagram", "schematic", "p&id", "pid", "drawing", "flowsheet", "loop", "vessel", "valve", "pump", "exchanger"])) or (has_explicit_visual_ref and any(k in q_lower for k in ["diagram", "schematic", "drawing", "p&id", "blueprint"]))
+        is_defect = bool(re.search(r'\b(?:defect|corrosion|pitting|crack|rust|damage|wear|weeping)\b', q_lower)) and (has_image_attachment or any(k in q_lower for k in ["photo", "photos", "picture", "image", "visual inspection", "equipment photo"]))
+        is_checklist = bool(re.search(r'\b(?:checklist|handwritten|scanned|operator log|round sheet|inspection sheet|ocr)\b', q_lower)) and (has_image_attachment or "ocr" in q_lower or "scanned" in q_lower)
 
         if is_pid:
             return {

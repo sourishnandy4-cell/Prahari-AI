@@ -17,53 +17,197 @@ import {
   Wrench, 
   FileCheck,
   ChevronRight,
-  Upload
+  Upload,
+  Building2,
+  Users,
+  Languages,
+  ShieldCheck,
+  Scale,
+  Award,
+  HelpCircle,
+  PhoneCall
 } from 'lucide-react';
 import MessageItem from './MessageItem';
 import LottieLoader from './LottieLoader';
 import NeuralBrainHero3D from './NeuralBrainHero3D';
 
-const PROMPT_CARDS = [
+// ── PROMPT CARDS (INDUSTRY vs CONSUMER / EN vs HI) ───────────────────────────
+const INDUSTRY_CARDS_EN = [
   {
-    icon: Flame,
-    title: "Emergency Shutdown CDU",
-    desc: "What is the emergency shutdown procedure for the Crude Distillation Unit (CDU-3)?",
-    category: "Emergency SOP Directive",
-    color: "text-rose-400 bg-rose-500/10 border-rose-500/20"
+    icon: Building2,
+    title: "Which IS Standard Applies?",
+    desc: "Which Indian Standard and QCO order applies to manufacturing TMT steel rebars (Fe 500D)?",
+    category: "Product Standard Finder",
+    color: "text-amber-400 bg-amber-500/10 border-amber-500/20"
   },
   {
     icon: Wrench,
-    title: "Asset History: PRV-401",
-    desc: "Pull the maintenance history, pop-test tolerances, and recertification records for PRV-401.",
-    category: "Asset Integrity Registry",
+    title: "Mandatory Testing Requirements",
+    desc: "What testing is needed and what in-house lab equipment is required for packaged drinking water (IS 14543)?",
+    category: "Conformity & Lab Testing",
     color: "text-cyan-400 bg-cyan-500/10 border-cyan-500/20"
   },
   {
     icon: FileCheck,
-    title: "P&ID Schematic Tracing",
-    desc: "Analyze the CDU-3 P&ID schematic for block isolation valves EBV-101/102 and flare bypasses.",
-    category: "Multimodal P&ID Vision",
+    title: "Step-by-Step BIS Licence Guide",
+    desc: "Provide the complete step-by-step procedure and document checklist to get a BIS licence on MANAK Online.",
+    category: "Scheme-I Licensing",
     color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
   },
   {
-    icon: Brain,
-    title: "Material Code Harmonization",
-    desc: "Check if vendor submitted ASTM A105 flange meets MRPL PMS-300-SS sour service standards.",
-    category: "MOP&NG Standards Agent",
+    icon: Scale,
+    title: "Standards Comparison (IS X vs IS Y)",
+    desc: "What is the difference between municipal drinking water IS 10500 and packaged water IS 14543?",
+    category: "Standards Comparison",
     color: "text-purple-400 bg-purple-500/10 border-purple-500/20"
   },
   {
-    icon: Brain,
-    title: "Near-Miss Precursor NLP",
-    desc: "Screen recent field unsafe-act logs to flag high-consequence injury and fatality precursors.",
-    category: "NLP Precursor Detection",
+    icon: ShieldCheck,
+    title: "Domestic Plugs & Sockets (IS 1293)",
+    desc: "What are the safety shutter, insulation resistance, and 5000-cycle endurance rules under IS 1293:2019?",
+    category: "Electrical Accessories QCO",
+    color: "text-sky-400 bg-sky-500/10 border-sky-500/20"
+  },
+  {
+    icon: Flame,
+    title: "MRPL Refinery Safety SOP",
+    desc: "What is the emergency shutdown procedure for the Crude Distillation Unit (CDU-3)?",
+    category: "Operational Safety SOP",
+    color: "text-rose-400 bg-rose-500/10 border-rose-500/20"
+  }
+];
+
+const INDUSTRY_CARDS_HI = [
+  {
+    icon: Building2,
+    title: "लागू भारतीय मानक (IS कोड)",
+    desc: "टीएमटी सरिया (Fe 500D) के निर्माण पर कौन सा भारतीय मानक और क्यूसीओ आदेश लागू होता है?",
+    category: "मानक खोजकर्ता (Standard Finder)",
     color: "text-amber-400 bg-amber-500/10 border-amber-500/20"
   },
   {
+    icon: Wrench,
+    title: "अनिवार्य प्रयोगशाला परीक्षण",
+    desc: "पैकेज्ड पेयजल (IS 14543) के लिए कौन-कौन से रासायनिक एवं सूक्ष्मजैविक परीक्षण आवश्यक हैं?",
+    category: "लैब एवं गुणवत्ता परीक्षण",
+    color: "text-cyan-400 bg-cyan-500/10 border-cyan-500/20"
+  },
+  {
     icon: FileCheck,
-    title: "H2S Exposure Limits & PPE",
-    desc: "What are the permissible H2S gas exposure limits and mandatory SCBA protocols in Sector-2?",
-    category: "Toxic Gas Safety",
+    title: "बीआईएस लाइसेंस आवेदन प्रक्रिया",
+    desc: "मानक ऑनलाइन पर बीआईएस आईएसआई लाइसेंस प्राप्त करने की चरण-दर-चरण प्रक्रिया और आवश्यक दस्तावेज बताएं।",
+    category: "स्कीम-I लाइसेंसिंग",
+    color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
+  },
+  {
+    icon: Scale,
+    title: "मानकों की तुलना (IS X बनाम IS Y)",
+    desc: "सामान्य पेयजल IS 10500 और पैकेज्ड पेयजल IS 14543 के बीच क्या मुख्य अंतर हैं?",
+    category: "मानक तुलना (Comparison)",
+    color: "text-purple-400 bg-purple-500/10 border-purple-500/20"
+  },
+  {
+    icon: ShieldCheck,
+    title: "प्लग और सॉकेट सुरक्षा (IS 1293)",
+    desc: "घरेलू प्लग और सॉकेट के लिए शटर सुरक्षा और 5000 साइकिल इन्सर्शन परीक्षण के नियम क्या हैं?",
+    category: "इलेक्ट्रिकल सुरक्षा मानक",
+    color: "text-sky-400 bg-sky-500/10 border-sky-500/20"
+  },
+  {
+    icon: Flame,
+    title: "रिफाइनरी सुरक्षा एसओपी (MRPL)",
+    desc: "क्रूड डिस्टिलेशन यूनिट (CDU-3) के लिए आपातकालीन शटडाउन प्रक्रिया क्या है?",
+    category: "ऑपरेशनल सेफ्टी एसओपी",
+    color: "text-rose-400 bg-rose-500/10 border-rose-500/20"
+  }
+];
+
+const CONSUMER_CARDS_EN = [
+  {
+    icon: Award,
+    title: "Verify Gold Hallmark (6-Digit HUID)",
+    desc: "How do I check and verify the 6-digit HUID hallmark on gold jewellery via the BIS Care App?",
+    category: "Gold Hallmark Verification",
+    color: "text-amber-400 bg-amber-500/10 border-amber-500/20"
+  },
+  {
+    icon: ShieldCheck,
+    title: "Verify Authentic ISI Mark & CML",
+    desc: "How can a consumer verify if an ISI mark and 7-digit CML number on a product are authentic?",
+    category: "ISI Mark Authenticity",
+    color: "text-cyan-400 bg-cyan-500/10 border-cyan-500/20"
+  },
+  {
+    icon: Scale,
+    title: "File a Consumer Complaint",
+    desc: "How do I file an official complaint against substandard goods or fake ISI marks with BIS?",
+    category: "Consumer Grievance Redressal",
+    color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
+  },
+  {
+    icon: ShieldCheck,
+    title: "Two-Wheeler Helmets (IS 4151)",
+    desc: "Is an ISI mark mandatory for two-wheeler helmets, and what happens if a retailer sells non-ISI helmets?",
+    category: "Road & Personal Safety",
+    color: "text-rose-400 bg-rose-500/10 border-rose-500/20"
+  },
+  {
+    icon: Users,
+    title: "Toy Safety & Choking Hazards (IS 9873)",
+    desc: "What are the mandatory child safety rules and heavy metal limits for toys in India?",
+    category: "Child Safety Standards",
+    color: "text-purple-400 bg-purple-500/10 border-purple-500/20"
+  },
+  {
+    icon: PhoneCall,
+    title: "BIS Toll-Free Helpline & Rights",
+    desc: "What is the official BIS consumer helpline, and what compensation can I claim if gold purity fails?",
+    category: "Helpline & Consumer Rights",
+    color: "text-sky-400 bg-sky-500/10 border-sky-500/20"
+  }
+];
+
+const CONSUMER_CARDS_HI = [
+  {
+    icon: Award,
+    title: "सोने का हॉलमार्क (6-अंकीय HUID) जांचें",
+    desc: "सोने के गहनों पर 6-अंकीय HUID कोड की जांच 'BIS Care App' पर कैसे करें?",
+    category: "हॉलमार्क सत्यापन (Hallmark Check)",
+    color: "text-amber-400 bg-amber-500/10 border-amber-500/20"
+  },
+  {
+    icon: ShieldCheck,
+    title: "असली आईएसआई (ISI) मार्क की पहचान",
+    desc: "किसी उत्पाद पर मुद्रित आईएसआई मार्क और 7-अंकीय CML लाइसेंस नंबर असली है या नकली कैसे जांचें?",
+    category: "आईएसआई मार्क जांच",
+    color: "text-cyan-400 bg-cyan-500/10 border-cyan-500/20"
+  },
+  {
+    icon: Scale,
+    title: "घटिया उत्पाद या नकली ISI की शिकायत",
+    desc: "घटिया गुणवत्ता वाले उत्पाद या नकली आईएसआई मार्क के खिलाफ बीआईएस में शिकायत कैसे दर्ज करें?",
+    category: "उपभोक्ता शिकायत निवारण",
+    color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
+  },
+  {
+    icon: ShieldCheck,
+    title: "हेलमेट सुरक्षा नियम (IS 4151)",
+    desc: "क्या दोपहिया हेलमेट पर आईएसआई मार्क अनिवार्य है और बिना आईएसआई हेलमेट बेचने पर क्या सजा है?",
+    category: "सड़क सुरक्षा मानक",
+    color: "text-rose-400 bg-rose-500/10 border-rose-500/20"
+  },
+  {
+    icon: Users,
+    title: "खिलौनों की सुरक्षा (IS 9873)",
+    desc: "भारत में बच्चों के खिलौनों के लिए लेड, कैडमियम और चोकिंग हैज़र्ड की अनिवार्य सीमाएं क्या हैं?",
+    category: "बाल सुरक्षा मानक",
+    color: "text-purple-400 bg-purple-500/10 border-purple-500/20"
+  },
+  {
+    icon: PhoneCall,
+    title: "बीआईएस हेल्पलाइन एवं मुआवज़ा अधिकार",
+    desc: "बीआईएस की टोल-फ्री हेल्पलाइन क्या है और हॉलमार्क शुद्धता फेल होने पर जौहरी से क्या मुआवज़ा मिलता है?",
+    category: "हेल्पलाइन एवं उपभोक्ता अधिकार",
     color: "text-sky-400 bg-sky-500/10 border-sky-500/20"
   }
 ];
@@ -87,6 +231,11 @@ export default function ChatWindow({
   const [isRecording, setIsRecording] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
+  // Dual Entry Points: 'industry' | 'consumer'
+  const [entryPoint, setEntryPoint] = useState('industry');
+  // Bilingual Language: 'en' | 'hi'
+  const [language, setLanguage] = useState('en');
+
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -103,14 +252,14 @@ export default function ChatWindow({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
-  // Handle Voice Input via Web Speech API
+  // Voice Input via Web Speech API (supports English and Hindi)
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (SpeechRecognition) {
       const recognition = new SpeechRecognition();
       recognition.continuous = false;
       recognition.interimResults = false;
-      recognition.lang = 'en-US';
+      recognition.lang = language === 'hi' ? 'hi-IN' : 'en-IN';
 
       recognition.onresult = (event) => {
         const transcript = event.results[0][0].transcript;
@@ -128,7 +277,7 @@ export default function ChatWindow({
 
       recognitionRef.current = recognition;
     }
-  }, []);
+  }, [language]);
 
   const toggleVoiceInput = () => {
     if (!recognitionRef.current) {
@@ -141,6 +290,7 @@ export default function ChatWindow({
       setIsRecording(false);
     } else {
       try {
+        recognitionRef.current.lang = language === 'hi' ? 'hi-IN' : 'en-IN';
         recognitionRef.current.start();
         setIsRecording(true);
       } catch (err) {
@@ -154,10 +304,45 @@ export default function ChatWindow({
     if (!files.length) return;
 
     files.forEach((file) => {
-      const reader = new FileReader();
       const isImg = file.type.startsWith('image/');
+      const isText = file.type.startsWith('text/') || /\.(txt|md|csv|json|py|js|html|css|xml|yaml|yml|log)$/i.test(file.name);
 
-      reader.onload = (event) => {
+      if (isImg) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          setAttachments((prev) => [
+            ...prev,
+            {
+              id: Date.now() + Math.random().toString(),
+              file,
+              name: file.name,
+              size: file.size,
+              type: file.type,
+              previewUrl: event.target.result,
+              data: event.target.result,
+            },
+          ]);
+        };
+        reader.readAsDataURL(file);
+      } else if (isText) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          setAttachments((prev) => [
+            ...prev,
+            {
+              id: Date.now() + Math.random().toString(),
+              file,
+              name: file.name,
+              size: file.size,
+              type: file.type,
+              previewUrl: null,
+              data: event.target.result,
+            },
+          ]);
+        };
+        reader.readAsText(file);
+      } else {
+        // Binary files (PDF, DOCX, etc.)
         setAttachments((prev) => [
           ...prev,
           {
@@ -165,17 +350,11 @@ export default function ChatWindow({
             file,
             name: file.name,
             size: file.size,
-            type: file.type,
-            previewUrl: isImg ? event.target.result : null,
-            data: event.target.result,
+            type: file.type || 'application/octet-stream',
+            previewUrl: null,
+            data: null,
           },
         ]);
-      };
-
-      if (isImg) {
-        reader.readAsDataURL(file);
-      } else {
-        reader.readAsText(file);
       }
     });
   };
@@ -185,7 +364,6 @@ export default function ChatWindow({
     e.target.value = '';
   };
 
-  // Drag and Drop support
   const handleDragOver = (e) => {
     e.preventDefault();
     setIsDragging(true);
@@ -204,7 +382,6 @@ export default function ChatWindow({
     }
   };
 
-  // Paste image or files support
   const handlePaste = (e) => {
     if (e.clipboardData.files && e.clipboardData.files.length > 0) {
       processFiles(e.clipboardData.files);
@@ -233,6 +410,11 @@ export default function ChatWindow({
 
   const isActive = loading || isStreaming;
 
+  // Active prompt cards based on Entry Point and Language
+  const activePromptCards = entryPoint === 'industry'
+    ? (language === 'hi' ? INDUSTRY_CARDS_HI : INDUSTRY_CARDS_EN)
+    : (language === 'hi' ? CONSUMER_CARDS_HI : CONSUMER_CARDS_EN);
+
   return (
     <main 
       onDragOver={handleDragOver}
@@ -241,10 +423,9 @@ export default function ChatWindow({
       className="flex-1 h-screen flex flex-col justify-between bg-zinc-950 text-zinc-100 relative overflow-hidden select-none"
     >
       
-      {/* Header (Clean & Modern like Gemini / ChatGPT) */}
-      <header className="h-14 bg-zinc-950/80 backdrop-blur-md border-b border-zinc-800/80 px-4 md:px-6 flex items-center justify-between z-10 shrink-0">
+      {/* ── TOP HEADER (Dual Entry Points & Bilingual Toggle) ───────────────── */}
+      <header className="h-16 bg-zinc-950/90 backdrop-blur-md border-b border-zinc-800/80 px-4 md:px-6 flex items-center justify-between z-10 shrink-0 gap-2">
         <div className="flex items-center gap-3">
-          {/* Sidebar Toggle button — always shown on mobile, shown when collapsed on desktop */}
           {(isMobile || !isSidebarOpen) && (
             <button
               onClick={onToggleSidebar}
@@ -255,20 +436,54 @@ export default function ChatWindow({
             </button>
           )}
 
-          {/* Model Selector Pill with Brain Icon */}
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-xs text-zinc-200 font-medium shadow-sm">
-            <Brain className="w-3.5 h-3.5 text-cyan-400" />
-            <span className="font-semibold text-white">PRAHARI AI</span>
+          {/* Dual Entry Points Switcher (Industry vs Consumer) */}
+          <div className="flex items-center p-1 rounded-xl bg-zinc-900 border border-zinc-800 text-xs font-semibold shadow-inner">
+            <button
+              type="button"
+              onClick={() => setEntryPoint('industry')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                entryPoint === 'industry'
+                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm'
+                  : 'text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              <Building2 className="w-3.5 h-3.5 text-amber-400" />
+              <span>{language === 'hi' ? '🏭 उद्योग पोर्टल' : '🏭 Industry Portal'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setEntryPoint('consumer')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                entryPoint === 'consumer'
+                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
+                  : 'text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5 text-cyan-400" />
+              <span>{language === 'hi' ? '👥 उपभोक्ता पोर्टल' : '👥 Consumer Portal'}</span>
+            </button>
           </div>
         </div>
 
-        {/* Right Action Controls */}
+        {/* Right Controls: Language Selector, Streaming Toggle, New Chat, Clear */}
         <div className="flex items-center gap-2">
+          {/* Bilingual English / Hindi Toggle */}
+          <button
+            type="button"
+            onClick={() => setLanguage(l => l === 'en' ? 'hi' : 'en')}
+            className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/80 text-zinc-200 font-semibold transition-all cursor-pointer shadow-sm hover:border-cyan-500"
+            title="Toggle Language (English / हिन्दी)"
+          >
+            <Languages className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="font-mono">{language === 'en' ? 'EN' : 'हिन्दी'}</span>
+          </button>
+
           {/* Streaming toggle */}
           <button
             onClick={() => setUseStream(!useStream)}
             title={useStream ? 'Streaming tokens active' : 'Batch mode active'}
-            className={`flex items-center gap-1.5 text-xs px-3 py-1 rounded-full border transition-all cursor-pointer ${
+            className={`hidden sm:flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-xl border transition-all cursor-pointer ${
               useStream
                 ? 'bg-zinc-100 text-zinc-950 border-zinc-100 font-semibold shadow-sm'
                 : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
@@ -281,17 +496,17 @@ export default function ChatWindow({
           {/* New Chat Quick Button */}
           <button
             onClick={onNewChat}
-            className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg text-zinc-300 hover:text-white hover:bg-zinc-900 border border-zinc-800/80 transition-all cursor-pointer"
+            className="flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-xl text-zinc-300 hover:text-white hover:bg-zinc-900 border border-zinc-800/80 transition-all cursor-pointer"
             title="Start fresh conversation"
           >
             <Plus className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">New</span>
+            <span className="hidden md:inline">{language === 'hi' ? 'नया चैट' : 'New'}</span>
           </button>
 
           {/* Clear messages */}
           <button
             onClick={onClearChat}
-            className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors cursor-pointer"
+            className="p-1.5 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors cursor-pointer"
             title="Clear Chat History"
           >
             <Trash2 className="w-4 h-4" />
@@ -299,38 +514,131 @@ export default function ChatWindow({
         </div>
       </header>
 
-      {/* Message Feed / Main Chat Area */}
+      {/* ── QUICK ACTION CHIPS TRAY (Industry & Consumer Shortcuts) ─────────── */}
+      <div className="bg-zinc-950/60 border-b border-zinc-900 px-4 md:px-8 py-2 overflow-x-auto flex items-center gap-2 text-xs no-scrollbar shrink-0 z-10">
+        <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-500 font-semibold shrink-0">
+          {language === 'hi' ? 'त्वरित प्रश्न:' : 'Quick Actions:'}
+        </span>
+
+        {entryPoint === 'industry' ? (
+          <>
+            <button
+              onClick={() => onSendMessage(language === 'hi' ? "टीएमटी सरिया (Fe 500D) के लिए कौन सा IS मानक और परीक्षण आवश्यक है?" : "Which IS standard applies to TMT steel rebars (Fe 500D) and what testing is needed?", useStream, [])}
+              className="px-2.5 py-1 rounded-full bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0 cursor-pointer transition-colors"
+            >
+              🏷️ {language === 'hi' ? 'लागू IS कोड खोजें' : 'Which IS applies?'}
+            </button>
+            <button
+              onClick={() => onSendMessage(language === 'hi' ? "पैकेज्ड पेयजल IS 14543 के लिए कौन से परीक्षण आवश्यक हैं?" : "What testing is needed for Packaged Drinking Water under IS 14543:2004?", useStream, [])}
+              className="px-2.5 py-1 rounded-full bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shrink-0 cursor-pointer transition-colors"
+            >
+              🧪 {language === 'hi' ? 'आवश्यक लैब परीक्षण' : 'What testing is needed?'}
+            </button>
+            <button
+              onClick={() => onSendMessage(language === 'hi' ? "मानक ऑनलाइन पर बीआईएस लाइसेंस प्राप्त करने की चरण-दर-चरण प्रक्रिया और आवश्यक दस्तावेज बताएं।" : "Provide the step-by-step procedure and document checklist to get an ISI licence on MANAK Online.", useStream, [])}
+              className="px-2.5 py-1 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0 cursor-pointer transition-colors"
+            >
+              📜 {language === 'hi' ? 'लाइसेंस प्रक्रिया और दस्तावेज' : 'Step-by-step Licence Guide'}
+            </button>
+            <button
+              onClick={() => onSendMessage(language === 'hi' ? "IS 10500 और IS 14543 में क्या अंतर है?" : "What is the difference between IS 10500 and IS 14543?", useStream, [])}
+              className="px-2.5 py-1 rounded-full bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 shrink-0 cursor-pointer transition-colors"
+            >
+              ⚖️ {language === 'hi' ? 'मानकों की तुलना (Compare)' : 'Compare IS 10500 vs 14543'}
+            </button>
+            <button
+              onClick={() => onSendMessage(language === 'hi' ? "घरेलू प्लग और सॉकेट के लिए IS 1293:2019 के क्या नियम हैं?" : "What are the rules and tests for domestic plugs and sockets under IS 1293:2019?", useStream, [])}
+              className="px-2.5 py-1 rounded-full bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-500/30 shrink-0 cursor-pointer transition-colors"
+            >
+              🔌 {language === 'hi' ? 'प्लग एवं सॉकेट (IS 1293)' : 'Plugs & Sockets (IS 1293)'}
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              onClick={() => onSendMessage(language === 'hi' ? "सोने के गहनों पर 6-अंकीय HUID हॉलमार्क की जांच कैसे करें?" : "How do I check and verify the 6-digit HUID hallmark on gold jewellery via the BIS Care App?", useStream, [])}
+              className="px-2.5 py-1 rounded-full bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0 cursor-pointer transition-colors"
+            >
+              💎 {language === 'hi' ? 'सोना हॉलमार्क (HUID) जांचें' : 'Verify Gold Hallmark (HUID)'}
+            </button>
+            <button
+              onClick={() => onSendMessage(language === 'hi' ? "असली आईएसआई मार्क और 7-अंकीय CML नंबर का सत्यापन कैसे करें?" : "How to verify genuine ISI mark and 7-digit CML number on BIS Care App?", useStream, [])}
+              className="px-2.5 py-1 rounded-full bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shrink-0 cursor-pointer transition-colors"
+            >
+              🛡️ {language === 'hi' ? 'आईएसआई मार्क व CML जांचें' : 'Check ISI Mark & CML'}
+            </button>
+            <button
+              onClick={() => onSendMessage(language === 'hi' ? "घटिया उत्पाद या नकली आईएसआई की शिकायत बीआईएस में कैसे दर्ज करें?" : "How do I file an official consumer complaint against substandard goods or fake ISI marks?", useStream, [])}
+              className="px-2.5 py-1 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0 cursor-pointer transition-colors"
+            >
+              ⚖️ {language === 'hi' ? 'उपभोक्ता शिकायत दर्ज करें' : 'File Consumer Complaint'}
+            </button>
+            <button
+              onClick={() => onSendMessage(language === 'hi' ? "दोपहिया वाहन हेलमेट के लिए क्या आईएसआई अनिवार्य है?" : "Is ISI mark mandatory for two wheeler helmets under IS 4151:2015?", useStream, [])}
+              className="px-2.5 py-1 rounded-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 shrink-0 cursor-pointer transition-colors"
+            >
+              🪖 {language === 'hi' ? 'हेलमेट सुरक्षा (IS 4151)' : 'Helmets Safety (IS 4151)'}
+            </button>
+            <button
+              onClick={() => onSendMessage(language === 'hi' ? "बीआईएस राष्ट्रीय टोल-फ्री हेल्पलाइन नंबर और सहायता पोर्टल क्या हैं?" : "What is the official BIS toll-free helpline number and portals?", useStream, [])}
+              className="px-2.5 py-1 rounded-full bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-500/30 shrink-0 cursor-pointer transition-colors"
+            >
+              📞 {language === 'hi' ? 'हेल्पलाइन: 1800-11-1255' : 'Helpline: 1800-11-1255'}
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* ── MAIN CHAT AREA / MESSAGE FEED ──────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6 z-10">
         {messages.length === 0 ? (
           /* Empty / Welcome State with 3D Neural Human Brain Hero */
-          <div className="w-full flex flex-col items-center justify-start text-center max-w-2xl mx-auto px-2 select-text pt-4 pb-8">
+          <div className="w-full flex flex-col items-center justify-start text-center max-w-3xl mx-auto px-2 select-text pt-2 pb-8">
             
-            {/* 3D Anatomical Human Brain Hero (8,500 particles, gyri/sulci folding, synaptic firings & mouse parallax) */}
-            <div className="relative w-full h-44 sm:h-52 md:h-56 mb-2 flex items-center justify-center pointer-events-auto">
+            {/* 3D Anatomical Brain Hero Canvas */}
+            <div className="relative w-full h-40 sm:h-48 md:h-52 mb-2 flex items-center justify-center pointer-events-auto">
               <div className="absolute inset-0 bg-gradient-to-t from-cyan-500/10 via-transparent to-transparent rounded-full blur-2xl pointer-events-none" />
               <NeuralBrainHero3D phase={0} className="w-full h-full" />
             </div>
 
-            {/* Title & Subtitle */}
+            {/* Portal Badge & Heading */}
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-xs text-zinc-300 font-mono mb-2">
+              <span className={`w-2 h-2 rounded-full ${entryPoint === 'industry' ? 'bg-amber-400' : 'bg-cyan-400'} animate-pulse`} />
+              <span>
+                {entryPoint === 'industry' 
+                  ? (language === 'hi' ? 'उद्योग व विनिर्माण सहायता मोड' : 'Industry & Manufacturing Mode') 
+                  : (language === 'hi' ? 'नागरिक व उपभोक्ता अधिकार मोड' : 'Consumer Rights & Verification Mode')
+                }
+              </span>
+            </div>
+
             <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-tight mb-1.5 font-sans">
-              How can Prahari AI assist you today?
+              {language === 'hi' 
+                ? (entryPoint === 'industry' ? 'भारतीय मानक एवं बीआईएस प्रमाणन में आपकी क्या सहायता करूँ?' : 'आईएसआई मार्क एवं हॉलमार्क सत्यापन में आपका स्वागत है')
+                : (entryPoint === 'industry' ? 'How can BIS Virtual Assistant assist your enterprise?' : 'BIS Consumer Protection & Standards Assistant')
+              }
             </h2>
-            <p className="text-zinc-400 text-xs sm:text-sm leading-relaxed mb-6 max-w-lg font-normal">
-              Ask technical safety queries, audit emergency SOPs, or attach pictures, diagrams, and compliance documents for sovereign offline analysis.
+
+            <p className="text-zinc-400 text-xs sm:text-sm leading-relaxed mb-6 max-w-xl font-normal">
+              {language === 'hi'
+                ? 'भारतीय मानकों (IS Codes), अनिवार्य क्यूसीओ आदेशों, परीक्षण आवश्यकताओं, 6-अंकीय HUID हॉलमार्क और शिकायत निवारण हेतु संपूर्ण मार्गदर्शिका।'
+                : 'Search Indian Standards (IS Codes), verify 6-digit HUID Hallmarks, inspect ISI Mark (CML numbers), audit mandatory QCOs, and navigate step-by-step certification.'
+              }
             </p>
 
-            {/* 4 Interactive Prompt Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full text-left">
-              {PROMPT_CARDS.map((card, idx) => {
+            {/* Prompt Cards Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 w-full text-left">
+              {activePromptCards.map((card, idx) => {
                 const IconComponent = card.icon;
                 return (
                   <button
                     key={idx}
+                    type="button"
                     onClick={() => {
                       setInputQuery('');
                       onSendMessage(card.desc, useStream, []);
                     }}
-                    className="p-3.5 rounded-2xl bg-zinc-900/80 hover:bg-zinc-800/90 border border-zinc-800 hover:border-zinc-700 text-left transition-all duration-200 group flex flex-col justify-between gap-2 shadow-sm cursor-pointer"
+                    className="p-3.5 rounded-2xl bg-zinc-900/80 hover:bg-zinc-800/90 border border-zinc-800 hover:border-zinc-700 text-left transition-all duration-200 group flex flex-col justify-between gap-2 shadow-sm cursor-pointer hover:scale-[1.01]"
                   >
                     <div className="flex items-center justify-between">
                       <div className={`p-1.5 rounded-xl border ${card.color}`}>
@@ -351,7 +659,7 @@ export default function ChatWindow({
                     </div>
 
                     <div className="flex items-center gap-1 text-[10px] text-zinc-500 group-hover:text-cyan-400 font-medium pt-1">
-                      <span>Analyze protocol</span>
+                      <span>{language === 'hi' ? 'उत्तर देखें' : 'View Standards'}</span>
                       <ChevronRight className="w-3 h-3 transition-transform group-hover:translate-x-1" />
                     </div>
                   </button>
@@ -362,7 +670,11 @@ export default function ChatWindow({
         ) : (
           <div className="max-w-3xl mx-auto">
             {messages.map((msg) => (
-              <MessageItem key={msg.id} message={msg} />
+              <MessageItem 
+                key={msg.id} 
+                message={msg} 
+                onSelectQuery={(q) => onSendMessage(q, useStream, [])}
+              />
             ))}
           </div>
         )}
@@ -370,7 +682,7 @@ export default function ChatWindow({
         {/* Loading state (non-streaming) */}
         {loading && !isStreaming && (
           <div className="max-w-3xl mx-auto">
-            <LottieLoader text="Synthesizing response from local Sovereign LLM..." />
+            <LottieLoader text={language === 'hi' ? 'भारतीय मानक डेटाबेस से सटीक क्लॉज निकाले जा रहे हैं...' : 'Retrieving Indian Standards & verifying clauses...'} />
           </div>
         )}
 
@@ -378,18 +690,18 @@ export default function ChatWindow({
         {isStreaming && messages.some(m => m.streaming) && (
           <div className="max-w-3xl mx-auto flex items-center gap-2 text-xs text-zinc-400 mt-2 pl-4 animate-pulse">
             <Radio className="w-3 h-3 text-cyan-400" />
-            <span>Streaming response from Sovereign AI...</span>
+            <span>{language === 'hi' ? 'मानक दस्तावेज़ से रीयल-टाइम उत्तर प्राप्त हो रहा है...' : 'Streaming response from Sovereign Standards Engine...'}</span>
           </div>
         )}
 
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Floating Bottom Input Bar (ChatGPT / Gemini Style with + Attachment Icon) */}
+      {/* ── FLOATING BOTTOM INPUT BAR (Speech + Attachment + Send) ──────────── */}
       <footer className={`z-10 shrink-0 ${isMobile ? 'mobile-input-bar p-3 pt-3' : 'p-3 sm:p-5'}`}>
         <form onSubmit={handleSubmit} className="max-w-3xl mx-auto">
           
-          {/* Attachment Preview Tray above the input */}
+          {/* Attachment Preview Tray */}
           {attachments.length > 0 && (
             <div className="flex flex-wrap items-center gap-2 mb-2 p-2.5 rounded-2xl bg-zinc-900/95 border border-zinc-800 shadow-xl backdrop-blur-md">
               {attachments.map((att) => (
@@ -423,23 +735,22 @@ export default function ChatWindow({
             </div>
           )}
 
-          {/* Main Input Capsule (Modern Floating AI Bar) */}
+          {/* Main Input Capsule */}
           <div className={`relative flex items-center bg-zinc-900/95 hover:bg-zinc-900 rounded-2xl p-2 border transition-all shadow-2xl backdrop-blur-xl ${
             isDragging ? 'border-cyan-400 ring-2 ring-cyan-500/20' : 'border-zinc-800 focus-within:border-zinc-600 focus-within:ring-1 focus-within:ring-zinc-600'
           }`}>
             
-            {/* (+) Plus Attachment Button for Photos, Docs, SOPs */}
+            {/* (+) Attachment Button for Standards & Manuals */}
             <div className="relative">
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 className="flex items-center justify-center w-8 h-8 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all cursor-pointer mr-1.5 shrink-0 group"
-                title="Add pictures, documents or SOPs to analyze"
+                title="Attach standard PDF, document or image"
               >
                 <Plus className="w-4 h-4 font-bold group-hover:scale-110 transition-transform" />
               </button>
 
-              {/* Hidden file input supporting images, docs, pdfs */}
               <input
                 ref={fileInputRef}
                 type="file"
@@ -450,7 +761,7 @@ export default function ChatWindow({
               />
             </div>
 
-            {/* Text Input — textarea on mobile for multi-line */}
+            {/* Input Box */}
             {isMobile ? (
               <textarea
                 ref={inputRef}
@@ -458,7 +769,10 @@ export default function ChatWindow({
                 onChange={(e) => setInputQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
                 onPaste={handlePaste}
-                placeholder="Ask a safety question..."
+                placeholder={language === 'hi' 
+                  ? (entryPoint === 'industry' ? "उत्पाद मानक या परीक्षण नियम पूछें..." : "हॉलमार्क, आईएसआई या शिकायत प्रक्रिया पूछें...")
+                  : (entryPoint === 'industry' ? "Ask: Which IS applies? What testing is needed?..." : "Ask: Verify gold hallmark, check ISI mark, file complaint...")
+                }
                 disabled={isActive}
                 rows={1}
                 style={{ resize: 'none', overflow: 'hidden' }}
@@ -476,21 +790,27 @@ export default function ChatWindow({
                 onChange={(e) => setInputQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
                 onPaste={handlePaste}
-                placeholder="Ask a safety question or attach pictures/docs to analyze..."
+                placeholder={language === 'hi'
+                  ? (entryPoint === 'industry' ? "पूछें: कौन सा IS मानक लागू होता है? क्या परीक्षण आवश्यक हैं? या PDF अटैच करें..." : "पूछें: सोने का हॉलमार्क कैसे चेक करें? नकली ISI की शिकायत कैसे करें?...")
+                  : (entryPoint === 'industry' ? "Ask: 'Which IS standard applies to my product?', 'What testing is needed?', or upload PDF..." : "Ask: 'How to check gold hallmark HUID?', 'Verify ISI mark', 'Consumer complaint process'...")
+                }
                 disabled={isActive}
                 className="w-full bg-transparent px-2 py-2 text-zinc-100 placeholder-zinc-500 text-sm focus:outline-none font-sans select-text cursor-text"
               />
             )}
 
-            {/* Voice Input (Mic) Button */}
+            {/* Voice Input (Speech-to-Text) Button */}
             <button
               type="button"
               onClick={toggleVoiceInput}
               disabled={isActive}
               className={`p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all cursor-pointer shrink-0 mr-1.5 ${
-                isRecording ? 'bg-rose-500/20 text-rose-400 animate-pulse' : ''
+                isRecording ? 'bg-rose-500/20 text-rose-400 animate-pulse ring-2 ring-rose-500/40' : ''
               }`}
-              title={isRecording ? 'Listening... click to stop' : 'Voice input'}
+              title={isRecording 
+                ? (language === 'hi' ? 'सुन रहा हूँ... रोकने के लिए क्लिक करें' : 'Listening... click to stop') 
+                : (language === 'hi' ? 'आवाज़ द्वारा पूछें (Voice Input)' : `Voice input (${language === 'hi' ? 'Hindi' : 'English'})`)
+              }
             >
               {isRecording ? <Mic className="w-4 h-4 text-rose-400" /> : <Mic className="w-4 h-4" />}
             </button>
@@ -506,8 +826,10 @@ export default function ChatWindow({
             </button>
           </div>
 
-          <p className="text-[10px] text-zinc-500 text-center mt-2 font-mono">
-            PRAHARI AI &bull; Sovereign Industrial Intelligence &bull; MRPL Refinery
+          <p className="text-[10px] text-zinc-500 text-center mt-2 font-mono flex items-center justify-center gap-2">
+            <span>PRAHARI AI &bull; SIH Topic 26107 &bull; Bureau of Indian Standards (BIS)</span>
+            <span className="text-zinc-600">|</span>
+            <span className="text-cyan-500/80">Helpline: 1800-11-1255</span>
           </p>
         </form>
       </footer>

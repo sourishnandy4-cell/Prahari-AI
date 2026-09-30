@@ -10,6 +10,7 @@ from backend.app.services.equipment_registry import equipment_registry
 from backend.app.services.agentic_workflows import agentic_workflows
 from backend.app.services.multimodal_vision import multimodal_vision
 from backend.app.services.sovereign_guardrails import sovereign_guardrails
+from backend.app.services.bis_service import bis_service
 
 
 class OfflineIntelligenceEngine:
@@ -74,7 +75,14 @@ class OfflineIntelligenceEngine:
                 "mode": "Sovereign Offline Conversational Engine"
             }
 
-        # 5. Code & Programming Requests
+        # 5. Bureau of Indian Standards (BIS) & Indian Standards (IS Codes) Brain (SIH Topic 26107)
+        if bis_service.is_bis_query(q_clean):
+            bis_res = bis_service.evaluate_query(q_clean, retrieved_docs=docs)
+            if bis_res:
+                bis_res["answer"] = sovereign_guardrails.append_sovereign_footer(bis_res["answer"], q_clean)
+                return bis_res
+
+        # 6. Code & Programming Requests
         code_resp = self._check_coding_request(q_clean)
         if code_resp:
             return {

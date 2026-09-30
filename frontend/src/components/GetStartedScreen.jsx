@@ -66,11 +66,11 @@ export default function GetStartedScreen({ onGetStarted }) {
           className="space-y-4 sm:space-y-6"
         >
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900/90 border border-zinc-800 text-[11px] sm:text-xs text-zinc-300 font-medium shadow-sm">
-            <span>Mangalore Refinery & Petrochemicals (MRPL)</span>
+            <span>SIH 26107 &bull; Indian Standards (BIS) & MRPL Safety</span>
           </div>
 
           <h1 className="text-3xl sm:text-5xl md:text-7xl font-bold tracking-tight text-white uppercase leading-tight">
-            Sovereign Safety <br /> Intelligence
+            Indian Standards & <br /> BIS Schemes Assistant
           </h1>
 
           <p className="text-sm sm:text-lg text-zinc-300 max-w-xl mx-auto tracking-wider font-light italic">

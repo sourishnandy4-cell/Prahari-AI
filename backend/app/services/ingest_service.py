@@ -125,14 +125,19 @@ def ingest_pdf_manual(file_path: str) -> Dict[str, Any]:
     try:
         vectorstore.add_documents(chunks)
     except Exception as e:
-        if "dimension" in str(e).lower() or "expecting embedding" in str(e).lower():
-            # If collection has incompatible dimension, reset it and add
-            try:
-                vectorstore._client.delete_collection("mrpl_industrial_manuals")
-            except Exception:
-                pass
-            vectorstore = get_vectorstore()
-            vectorstore.add_documents(chunks)
+        err_msg = str(e).lower()
+        if "dimension" in err_msg or "expecting embedding" in err_msg:
+            import logging
+            logging.getLogger(__name__).error(
+                f"ChromaDB embedding dimension mismatch for '{base_name}': {e}. "
+                "Current embedding dimension conflicts with existing collection. "
+                "Do NOT drop entire collection silently. User must trigger re-index explicitly."
+            )
+            raise RuntimeError(
+                f"Embedding dimension mismatch: {e}. "
+                "The active embedding model dimension does not match existing collection. "
+                "Please use the Re-index option in Documents Manager to harmonize the collection."
+            )
         else:
             raise e
 

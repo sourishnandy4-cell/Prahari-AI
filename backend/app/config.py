@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     REWRITE_QUERY: bool = True     # enable automatic query rewriting
     SELF_CRITIQUE: bool = True     # enable self-critique / answer validation pass
     AUTO_SEED_DEFAULT_SOP: bool = True # automatically index default MRPL SOP on startup if empty
+    AUTO_SEED_BIS_STANDARDS: bool = True # automatically index BIS Standards Compendium on startup
 
     # Auth
     API_KEY: Optional[str] = None  # if set, all /api/* routes require X-API-Key header
@@ -29,9 +30,11 @@ class Settings(BaseSettings):
     BASE_DIR: str = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     DATA_DIR: str = os.path.join(BASE_DIR, "data")
     UPLOAD_DIR: str = os.path.join(DATA_DIR, "uploads")
+    STANDARDS_DIR: str = os.path.join(DATA_DIR, "standards")
     VECTOR_DB_DIR: str = os.path.join(DATA_DIR, "vectorstore")
     SESSION_DB_PATH: str = os.path.join(DATA_DIR, "sessions.db")
     DEFAULT_SOP_PATH: str = os.path.join(BASE_DIR, "MRPL_Refinery_Safety_SOP_2026.pdf")
+    DEFAULT_BIS_PATH: str = os.path.join(BASE_DIR, "Indian_Standards_BIS_Compendium_2026.pdf")
 
     class Config:
         env_file = ".env"
@@ -42,4 +45,5 @@ settings = Settings()
 # Ensure directories exist at import time
 os.makedirs(settings.DATA_DIR, exist_ok=True)
 os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
+os.makedirs(settings.STANDARDS_DIR, exist_ok=True)
 os.makedirs(settings.VECTOR_DB_DIR, exist_ok=True)
