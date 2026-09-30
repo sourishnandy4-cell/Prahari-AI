@@ -59,4 +59,16 @@ This major release transforms PRAHARI AI into a dedicated Virtual Assistant for 
 - Existing MRPL refinery safety SOPs (CDU emergency shutdowns, H2S toxic gas limits, PSV pop-test tolerances) remain 100% preserved and accessible.
 
 ---
+
+### 📦 Release Assets & Binaries
+
+| Asset Name | Format | Size | SHA-256 Checksum |
+| :--- | :--- | :--- | :--- |
+| **`PRAHARI-AI-Setup-v3.0.0.exe`** | Windows Installer (NSIS) | ~248.9 MB | `F7AC74D3A5472DC5A1FC0E1DD7552CF50170A278CE5B1F83F151157A22477A88` |
+| **`PRAHARI-AI-Portable-v3.0.0.exe`** | Portable Standalone Exe | ~248.5 MB | `06D988AC8676B706487579A0599721780C6B2E1434D27A8FA724F5D630FE95A5` |
+
+*Both binaries bundle the complete offline Python runtime, PyInstaller standalone backend, SQLite vectorstore, pre-seeded BIS Compendium (17 Indian Standards), and Chromium desktop shell.*
+
+---
 *Created for Smart India Hackathon (SIH 2024 - PS 26107) • Bureau of Indian Standards & MRPL Aegis Team*
+

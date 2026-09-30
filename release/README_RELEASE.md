@@ -8,17 +8,19 @@
 ## 📦 Release Artifacts (v3.0.0)
 
 ### 🖥️ Windows Desktop
-1. **`PRAHARI-AI-Setup-v3.0.0.exe`** (179.1 MB)
-   - Full Windows NSIS Installer with auto-update hooks.
+1. **`PRAHARI-AI-Setup-v3.0.0.exe`** (248.9 MB)
+   - **SHA-256**: `F7AC74D3A5472DC5A1FC0E1DD7552CF50170A278CE5B1F83F151157A22477A88`
+   - Full Windows NSIS Installer bundling the complete standalone PyInstaller Python backend, SQLite vectorstore, offline ChromaDB, and Chromium desktop shell.
    - Dual-mode portal: **🏭 Industry** (Standard finder, SIT parameters, QCOs) & **👥 Consumer** (ISI CML, Gold Hallmark HUID, Complaints).
    - Native Bilingual UI: One-click English / हिन्दी switch with automatic Devanagari script detection.
-   - Integrated offline ChromaDB vectorstore + Okapi BM25 hybrid retrieval engine.
+   - Integrated offline hybrid retrieval engine with exact clause citation.
    - Voice input recognition via Web Speech API (`en-IN` / `hi-IN`).
    - Creates Desktop & Start Menu shortcuts with silent background startup.
 
-2. **`PRAHARI-AI-Portable-v3.0.0.exe`** (178.6 MB)
-   - Zero-installation portable edition.
-   - Simply double-click to launch immediately on any Windows 10/11 64-bit PC.
+2. **`PRAHARI-AI-Portable-v3.0.0.exe`** (248.5 MB)
+   - **SHA-256**: `06D988AC8676B706487579A0599721780C6B2E1434D27A8FA724F5D630FE95A5`
+   - Zero-installation portable edition bundling the complete standalone backend.
+   - Simply double-click to launch immediately on any Windows 10/11 64-bit PC without installation.
 
 ---
 
