@@ -22,6 +22,7 @@ class ChatRequest(BaseModel):
     query: str
     session_id: Optional[str] = None     # if provided, history is loaded and message is saved
     document_filter: Optional[str] = None  # restrict RAG to a specific filename
+    language: Optional[str] = "en"        # user selected language ('en' | 'hi')
 
 
 @router.post("/chat")
@@ -43,6 +44,7 @@ async def chat_endpoint(request: ChatRequest):
             request.query,
             history,
             request.document_filter,
+            user_language=request.language,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"RAG execution failed: {str(e)}")

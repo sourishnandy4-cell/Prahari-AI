@@ -92,7 +92,8 @@ def call_gemini_cloud_llm(
     context: str,
     web_snippets: List[Dict[str, str]],
     history_str: str = "",
-    model_name: str = "gemini-1.5-flash"
+    model_name: str = "gemini-1.5-flash",
+    user_language: Optional[str] = "en"
 ) -> Optional[str]:
     """
     Invokes Google Gemini Cloud AI for dynamic, state-of-the-art generative responses
@@ -115,9 +116,15 @@ def call_gemini_cloud_llm(
                 [f"• [{w['title']}]({w['url']}): {w['snippet']}" for w in web_snippets]
             )
 
-        # Detect language
-        devanagari_count = sum(1 for c in query if '\u0900' <= c <= '\u097F')
-        is_hindi = devanagari_count > 2 or (devanagari_count / max(len(query), 1) > 0.3)
+        # Detect language with explicit user_language priority
+        if user_language == "hi":
+            is_hindi = True
+        elif user_language == "en":
+            is_hindi = False
+        else:
+            devanagari_count = sum(1 for c in query if '\u0900' <= c <= '\u097F')
+            is_hindi = devanagari_count > 2 or (devanagari_count / max(len(query), 1) > 0.3)
+
         lang_target = "Hindi" if is_hindi else "English"
         lang_directive = "उत्तर केवल हिन्दी (Devanagari script) में दें।" if is_hindi else "Respond ENTIRELY in English. Do NOT use Hindi or Devanagari script."
 

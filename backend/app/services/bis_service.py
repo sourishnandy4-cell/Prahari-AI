@@ -615,7 +615,12 @@ class BISService:
         q_clean = query.strip()
         q_low = q_clean.lower()
 
-        is_hi = (language_preference == "hi") or self.is_hindi(q_clean)
+        if language_preference == "hi":
+            is_hi = True
+        elif language_preference == "en":
+            is_hi = False
+        else:
+            is_hi = self.is_hindi(q_clean)
 
         # 1. Check for Standards Comparison (IS X vs IS Y)
         comp_res = self._check_standards_comparison(q_clean, is_hi)

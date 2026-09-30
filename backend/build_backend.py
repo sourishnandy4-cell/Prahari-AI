@@ -95,6 +95,11 @@ def compile_fastapi_backend():
         "--hidden-import=multipart",
         "--hidden-import=python_multipart",
         "--hidden-import=aiofiles",
+        # Google GenAI / Settings / Routes
+        "--hidden-import=backend.app.routes.settings",
+        "--hidden-import=google",
+        "--hidden-import=google.genai",
+        "--collect-all=google.genai",
         # Collect all packages to ensure nothing is missed
         "--collect-all=chromadb",
         "--collect-all=langchain_chroma",

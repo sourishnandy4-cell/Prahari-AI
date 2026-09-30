@@ -30,7 +30,8 @@ class OfflineIntelligenceEngine:
         self,
         query: str,
         docs: List[Document] = None,
-        history: Optional[List[Dict]] = None
+        history: Optional[List[Dict]] = None,
+        user_language: Optional[str] = "en"
     ) -> Dict[str, Any]:
         """
         Main entry point for sovereign offline reasoning.
@@ -56,7 +57,8 @@ class OfflineIntelligenceEngine:
             }
 
         # 3. Greetings & Small Talk
-        greeting_resp = self._check_greeting(q_lower)
+        is_hi = (user_language == "hi")
+        greeting_resp = self._check_greeting(q_lower, is_hi=is_hi)
         if greeting_resp:
             return {
                 "answer": sovereign_guardrails.append_sovereign_footer(greeting_resp, q_clean),
@@ -66,7 +68,7 @@ class OfflineIntelligenceEngine:
             }
 
         # 4. Identity & Sovereign Capabilities
-        identity_resp = self._check_identity(q_lower)
+        identity_resp = self._check_identity(q_lower, is_hi=is_hi)
         if identity_resp:
             return {
                 "answer": sovereign_guardrails.append_sovereign_footer(identity_resp, q_clean),
@@ -77,7 +79,7 @@ class OfflineIntelligenceEngine:
 
         # 5. Bureau of Indian Standards (BIS) & Indian Standards (IS Codes) Brain (SIH Topic 26107)
         if bis_service.is_bis_query(q_clean):
-            bis_res = bis_service.evaluate_query(q_clean, retrieved_docs=docs)
+            bis_res = bis_service.evaluate_query(q_clean, retrieved_docs=docs, language_preference=user_language)
             if bis_res:
                 bis_res["answer"] = sovereign_guardrails.append_sovereign_footer(bis_res["answer"], q_clean)
                 return bis_res
@@ -810,7 +812,7 @@ class OfflineIntelligenceEngine:
         return None
 
     # ── 3. Greetings, Wellness & Daily Assistant Engine ───────────────────────
-    def _check_greeting(self, q: str) -> Optional[str]:
+    def _check_greeting(self, q: str, is_hi: bool = False) -> Optional[str]:
         q_low = q.lower().strip()
         words = re.findall(r'\b\w+\b', q_low)
 
@@ -819,6 +821,15 @@ class OfflineIntelligenceEngine:
             "not feeling well", "feeling unwell", "am sick", "feel sick", "have a headache", "have fever",
             "body pain", "feeling tired", "exhausted", "stomach ache", "feeling low", "feeling sad", "stressed"
         ]):
+            if is_hi:
+                return (
+                    "### 💙 मुझे यह जानकर खेद हुआ कि आप अस्वस्थ महसूस कर रहे हैं।\n\n"
+                    "कृपया इस समय अपने स्वास्थ्य को प्राथमिकता दें। आपको बेहतर महसूस कराने के लिए कुछ आवश्यक सुझाव:\n\n"
+                    "1. **विश्राम और आराम**: पर्याप्त आराम करें और शांत तथा हवादार स्थान पर रहें।\n"
+                    "2. **हाइड्रेशन**: गुनगुना पानी, हर्बल चाय या इलेक्ट्रोलाइट का सेवन करें।\n"
+                    "3. **स्क्रीन से दूरी**: आँखों और सिर के तनाव को कम करने के लिए मोबाइल/कंप्यूटर स्क्रीन से ब्रेक लें।\n\n"
+                    "> 🩺 **सलाह**: यदि लक्षण गंभीर हैं, तो कृपया तुरंत चिकित्सक से परामर्श लें।"
+                )
             return (
                 "### 💙 I'm really sorry to hear that you're not feeling well.\n\n"
                 "Please prioritize taking care of yourself right now. Here are some gentle, practical steps to help you feel better:\n\n"
@@ -833,18 +844,27 @@ class OfflineIntelligenceEngine:
 
         # Gratitude & Closing
         if any(k in q_low for k in ["thank you", "thanks a lot", "thanks", "appreciate it", "good job", "great work"]):
+            if is_hi:
+                return (
+                    "😊 **आपका बहुत-बहुत स्वागत है!**\n\n"
+                    "मैं आपकी सहायता के लिए सदैव उपलब्ध हूँ। बताइए आगे मैं आपकी क्या मदद कर सकता हूँ?"
+                )
             return (
                 "😊 **You're very welcome!**\n\n"
                 "I'm always here to help—whether with everyday questions, writing tasks, mathematics, coding, or industrial operations. Let me know what you'd like to work on next!"
             )
 
         if any(k in q_low for k in ["good night", "sweet dreams", "sleep well"]):
+            if is_hi:
+                return "🌙 **शुभ रात्रि!**\n\nसुखद एवं शांतिपूर्ण नींद लें। कल सहायता की आवश्यकता होने पर मैं यहीं उपलब्ध रहूँगा।"
             return (
                 "🌙 **Good night!**\n\n"
                 "Have a restful and peaceful sleep. If you need anything tomorrow, I'll be right here ready to help!"
             )
 
         if any(k in q_low for k in ["bye", "goodbye", "see you later", "see ya", "catch you later"]):
+            if is_hi:
+                return "👋 **अलविदा! आपका दिन शुभ हो।**\n\nजब भी आवश्यकता हो, आप पुनः पूछ सकते हैं।"
             return (
                 "👋 **Goodbye! Have a wonderful day ahead.**\n\n"
                 "Feel free to return whenever you need assistance. Take care!"
@@ -860,8 +880,13 @@ class OfflineIntelligenceEngine:
             )
 
         # Basic greetings
-        greetings = ["hi", "hello", "hey", "good morning", "good afternoon", "good evening", "namaste", "howdy", "sup", "greetings", "yo"]
+        greetings = ["hi", "hello", "hey", "good morning", "good afternoon", "good evening", "namaste", "howdy", "sup", "greetings", "yo", "नमस्ते", "प्रणाम"]
         if any(w in greetings for w in words[:3]) and len(words) <= 5:
+            if is_hi:
+                return (
+                    "👋 **नमस्ते! आज मैं आपकी क्या सहायता कर सकता हूँ?**\n\n"
+                    "मैं प्रहरी एआई (PRAHARI AI) हूँ। आप मुझसे भारतीय मानक (IS Codes), बीआईएस योजनाएं, औद्योगिक सुरक्षा या सामान्य प्रश्न पूछ सकते हैं।"
+                )
             return (
                 "👋 **Hello! How can I help you today?**\n\n"
                 "I am your versatile AI assistant. You can ask me anything, including:\n"
@@ -874,6 +899,8 @@ class OfflineIntelligenceEngine:
             )
 
         if "how are you" in q_low:
+            if is_hi:
+                return "😊 **मैं बिल्कुल ठीक हूँ और आपकी सहायता के लिए तैयार हूँ!**\n\nआप कैसे हैं? आज आपकी क्या मदद करूँ?"
             return (
                 "😊 **I'm doing great and ready to help you!**\n\n"
                 "How are you doing today? Whether you have a quick question, need to draft something, want to solve a problem, or just want to chat, I'm here for you!"
@@ -882,11 +909,22 @@ class OfflineIntelligenceEngine:
         return None
 
     # ── 4. Identity & System Info ────────────────────────────────────────────
-    def _check_identity(self, q: str) -> Optional[str]:
+    def _check_identity(self, q: str, is_hi: bool = False) -> Optional[str]:
         if any(phrase in q for phrase in [
             "who are you", "what is your name", "what are you", "what is prahari",
-            "what is aegis", "tell me about yourself", "what can you do", "help me", "your capabilities"
+            "what is aegis", "tell me about yourself", "what can you do", "help me", "your capabilities",
+            "तुम कौन हो", "आप कौन हैं", "तुम्हारा नाम क्या है"
         ]):
+            if is_hi:
+                return (
+                    "### 🤖 प्रहरी एआई (PRAHARI AI) में आपका स्वागत है\n\n"
+                    "मैं **प्रहरी एआई (PRAHARI AI)** हूँ — भारतीय मानक ब्यूरो (BIS Schemes - SIH Topic 26107), भारतीय मानक (IS Codes), और औद्योगिक सुरक्षा हेतु समर्पित एआई सहायक।\n\n"
+                    "#### 🌟 मेरी मुख्य क्षमताएं:\n"
+                    "1. **भारतीय मानक एवं बीआईएस अनुपालन**: आईएस कोड विनिर्देश, अनिवार्य क्यूसीओ आदेश और परीक्षण प्रक्रियाएं।\n"
+                    "2. **उपभोक्ता सुरक्षा**: असली आईएसआई मार्क एवं 6-अंकीय HUID हॉलमार्क का सत्यापन।\n"
+                    "3. **औद्योगिक सुरक्षा ও मानक**: रिफाइनरी एसओपी, पीएंडआईडी आरेख और उपकरण रखरखाव इतिहास।\n"
+                    "4. **100% संप्रभु एवं ऑफलाइन**: पूर्ण डेटा सुरक्षा के साथ पूरी तरह स्थानीय रूप से संचालित।"
+                )
             return (
                 "### 🤖 Welcome to PRAHARI AI\n\n"
                 "I am **PRAHARI AI**, a versatile, powerful, and intelligent assistant designed to help you with everyday life tasks, problem-solving, and specialized engineering intelligence:\n\n"

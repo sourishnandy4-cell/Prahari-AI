@@ -236,7 +236,7 @@ export default function App() {
   };
 
   // ── Handle sending message ───────────────────────────────────────────────
-  const handleSendMessage = async (query, useStream = true, attachments = []) => {
+  const handleSendMessage = async (query, useStream = true, attachments = [], language = 'en') => {
     let currentSessionId = sessionId;
     if (!currentSessionId) {
       currentSessionId = await handleNewChat();
@@ -314,7 +314,8 @@ export default function App() {
 
       try {
         const docParam = primaryDocFilter ? `&document_filter=${encodeURIComponent(primaryDocFilter)}` : '';
-        const url = apiUrl(`/api/stream?query=${encodeURIComponent(augmentedQuery)}${currentSessionId ? `&session_id=${currentSessionId}` : ''}${docParam}`);
+        const langParam = `&lang=${encodeURIComponent(language || 'en')}`;
+        const url = apiUrl(`/api/stream?query=${encodeURIComponent(augmentedQuery)}${langParam}${currentSessionId ? `&session_id=${currentSessionId}` : ''}${docParam}`);
         const eventSource = new EventSource(url);
         abortRef.current = eventSource;
 
@@ -433,6 +434,7 @@ export default function App() {
             session_id: currentSessionId,
             document_filter: primaryDocFilter || undefined,
             use_agentic: true,
+            language: language || 'en',
           }),
         });
 

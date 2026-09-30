@@ -26,6 +26,7 @@ async def stream_endpoint(
     query: str = Query(..., description="The safety/SOP query"),
     session_id: Optional[str] = Query(None, description="Active session ID for history"),
     document_filter: Optional[str] = Query(None, description="Restrict to a specific PDF filename"),
+    lang: Optional[str] = Query("en", description="User preferred language ('en' | 'hi')"),
 ):
     if not query.strip():
         async def _error():
@@ -47,7 +48,7 @@ async def stream_endpoint(
         rewritten_out = query
         latency_out = 0
 
-        async for chunk in stream_rag_response(query, history, document_filter):
+        async for chunk in stream_rag_response(query, history, document_filter, user_language=lang):
             # chunk is already formatted as "data: {...}\n\n"
             yield chunk
             # Parse chunk to collect final state

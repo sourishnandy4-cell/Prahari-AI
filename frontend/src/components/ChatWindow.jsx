@@ -400,7 +400,7 @@ export default function ChatWindow({
     e?.preventDefault();
     if ((!inputQuery.trim() && attachments.length === 0) || loading) return;
 
-    onSendMessage(inputQuery, useStream, attachments);
+    onSendMessage(inputQuery, useStream, attachments, language);
     setInputQuery('');
     setAttachments([]);
   };
@@ -558,31 +558,31 @@ export default function ChatWindow({
         {entryPoint === 'industry' ? (
           <>
             <button
-              onClick={() => onSendMessage(language === 'hi' ? "टीएमटी सरिया (Fe 500D) के लिए कौन सा IS मानक और परीक्षण आवश्यक है?" : "Which IS standard applies to TMT steel rebars (Fe 500D) and what testing is needed?", useStream, [])}
+              onClick={() => onSendMessage(language === 'hi' ? "टीएमटी सरिया (Fe 500D) के लिए कौन सा IS मानक और परीक्षण आवश्यक है?" : "Which IS standard applies to TMT steel rebars (Fe 500D) and what testing is needed?", useStream, [], language)}
               className="px-2.5 py-1 rounded-full bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0 cursor-pointer transition-colors"
             >
               🏷️ {language === 'hi' ? 'लागू IS कोड खोजें' : 'Which IS applies?'}
             </button>
             <button
-              onClick={() => onSendMessage(language === 'hi' ? "पैकेज्ड पेयजल IS 14543 के लिए कौन से परीक्षण आवश्यक हैं?" : "What testing is needed for Packaged Drinking Water under IS 14543:2004?", useStream, [])}
+              onClick={() => onSendMessage(language === 'hi' ? "पैकेज्ड पेयजल IS 14543 के लिए कौन से परीक्षण आवश्यक हैं?" : "What testing is needed for Packaged Drinking Water under IS 14543:2004?", useStream, [], language)}
               className="px-2.5 py-1 rounded-full bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shrink-0 cursor-pointer transition-colors"
             >
               🧪 {language === 'hi' ? 'आवश्यक लैब परीक्षण' : 'What testing is needed?'}
             </button>
             <button
-              onClick={() => onSendMessage(language === 'hi' ? "मानक ऑनलाइन पर बीआईएस लाइसेंस प्राप्त करने की चरण-दर-चरण प्रक्रिया और आवश्यक दस्तावेज बताएं।" : "Provide the step-by-step procedure and document checklist to get an ISI licence on MANAK Online.", useStream, [])}
+              onClick={() => onSendMessage(language === 'hi' ? "मानक ऑनलाइन पर बीआईएस लाइसेंस प्राप्त करने की चरण-दर-चरण प्रक्रिया और आवश्यक दस्तावेज बताएं।" : "Provide the step-by-step procedure and document checklist to get an ISI licence on MANAK Online.", useStream, [], language)}
               className="px-2.5 py-1 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0 cursor-pointer transition-colors"
             >
               📜 {language === 'hi' ? 'लाइसेंस प्रक्रिया और दस्तावेज' : 'Step-by-step Licence Guide'}
             </button>
             <button
-              onClick={() => onSendMessage(language === 'hi' ? "IS 10500 और IS 14543 में क्या अंतर है?" : "What is the difference between IS 10500 and IS 14543?", useStream, [])}
+              onClick={() => onSendMessage(language === 'hi' ? "IS 10500 और IS 14543 में क्या अंतर है?" : "What is the difference between IS 10500 and IS 14543?", useStream, [], language)}
               className="px-2.5 py-1 rounded-full bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 shrink-0 cursor-pointer transition-colors"
             >
               ⚖️ {language === 'hi' ? 'मानकों की तुलना (Compare)' : 'Compare IS 10500 vs 14543'}
             </button>
             <button
-              onClick={() => onSendMessage(language === 'hi' ? "घरेलू प्लग और सॉकेट के लिए IS 1293:2019 के क्या नियम हैं?" : "What are the rules and tests for domestic plugs and sockets under IS 1293:2019?", useStream, [])}
+              onClick={() => onSendMessage(language === 'hi' ? "घरेलू प्लग और सॉकेट के लिए IS 1293:2019 के क्या नियम हैं?" : "What are the rules and tests for domestic plugs and sockets under IS 1293:2019?", useStream, [], language)}
               className="px-2.5 py-1 rounded-full bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-500/30 shrink-0 cursor-pointer transition-colors"
             >
               🔌 {language === 'hi' ? 'प्लग एवं सॉकेट (IS 1293)' : 'Plugs & Sockets (IS 1293)'}
@@ -591,31 +591,31 @@ export default function ChatWindow({
         ) : (
           <>
             <button
-              onClick={() => onSendMessage(language === 'hi' ? "सोने के गहनों पर 6-अंकीय HUID हॉलमार्क की जांच कैसे करें?" : "How do I check and verify the 6-digit HUID hallmark on gold jewellery via the BIS Care App?", useStream, [])}
+              onClick={() => onSendMessage(language === 'hi' ? "सोने के गहनों पर 6-अंकीय HUID हॉलमार्क की जांच कैसे करें?" : "How do I check and verify the 6-digit HUID hallmark on gold jewellery via the BIS Care App?", useStream, [], language)}
               className="px-2.5 py-1 rounded-full bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0 cursor-pointer transition-colors"
             >
               💎 {language === 'hi' ? 'सोना हॉलमार्क (HUID) जांचें' : 'Verify Gold Hallmark (HUID)'}
             </button>
             <button
-              onClick={() => onSendMessage(language === 'hi' ? "असली आईएसआई मार्क और 7-अंकीय CML नंबर का सत्यापन कैसे करें?" : "How to verify genuine ISI mark and 7-digit CML number on BIS Care App?", useStream, [])}
+              onClick={() => onSendMessage(language === 'hi' ? "असली आईएसआई मार्क और 7-अंकीय CML नंबर का सत्यापन कैसे करें?" : "How to verify genuine ISI mark and 7-digit CML number on BIS Care App?", useStream, [], language)}
               className="px-2.5 py-1 rounded-full bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shrink-0 cursor-pointer transition-colors"
             >
               🛡️ {language === 'hi' ? 'आईएसआई मार्क व CML जांचें' : 'Check ISI Mark & CML'}
             </button>
             <button
-              onClick={() => onSendMessage(language === 'hi' ? "घटिया उत्पाद या नकली आईएसआई की शिकायत बीआईएस में कैसे दर्ज करें?" : "How do I file an official consumer complaint against substandard goods or fake ISI marks?", useStream, [])}
+              onClick={() => onSendMessage(language === 'hi' ? "घटिया उत्पाद या नकली आईएसआई की शिकायत बीआईएस में कैसे दर्ज करें?" : "How do I file an official consumer complaint against substandard goods or fake ISI marks?", useStream, [], language)}
               className="px-2.5 py-1 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shrink-0 cursor-pointer transition-colors"
             >
               ⚖️ {language === 'hi' ? 'उपभोक्ता शिकायत दर्ज करें' : 'File Consumer Complaint'}
             </button>
             <button
-              onClick={() => onSendMessage(language === 'hi' ? "दोपहिया वाहन हेलमेट के लिए क्या आईएसआई अनिवार्य है?" : "Is ISI mark mandatory for two wheeler helmets under IS 4151:2015?", useStream, [])}
+              onClick={() => onSendMessage(language === 'hi' ? "दोपहिया वाहन हेलमेट के लिए क्या आईएसआई अनिवार्य है?" : "Is ISI mark mandatory for two wheeler helmets under IS 4151:2015?", useStream, [], language)}
               className="px-2.5 py-1 rounded-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 shrink-0 cursor-pointer transition-colors"
             >
               🪖 {language === 'hi' ? 'हेलमेट सुरक्षा (IS 4151)' : 'Helmets Safety (IS 4151)'}
             </button>
             <button
-              onClick={() => onSendMessage(language === 'hi' ? "बीआईएस राष्ट्रीय टोल-फ्री हेल्पलाइन नंबर और सहायता पोर्टल क्या हैं?" : "What is the official BIS toll-free helpline number and portals?", useStream, [])}
+              onClick={() => onSendMessage(language === 'hi' ? "बीआईएस राष्ट्रीय टोल-फ्री हेल्पलाइन नंबर और सहायता पोर्टल क्या हैं?" : "What is the official BIS toll-free helpline number and portals?", useStream, [], language)}
               className="px-2.5 py-1 rounded-full bg-sky-500/10 hover:bg-sky-500/20 text-sky-300 border border-sky-500/30 shrink-0 cursor-pointer transition-colors"
             >
               📞 {language === 'hi' ? 'हेल्पलाइन: 1800-11-1255' : 'Helpline: 1800-11-1255'}
@@ -671,7 +671,7 @@ export default function ChatWindow({
                     type="button"
                     onClick={() => {
                       setInputQuery('');
-                      onSendMessage(card.desc, useStream, []);
+                      onSendMessage(card.desc, useStream, [], language);
                     }}
                     className="p-3.5 rounded-2xl bg-zinc-900/80 hover:bg-zinc-800/90 border border-zinc-800 hover:border-zinc-700 text-left transition-all duration-200 group flex flex-col justify-between gap-2 shadow-sm cursor-pointer hover:scale-[1.01]"
                   >
@@ -708,7 +708,7 @@ export default function ChatWindow({
               <MessageItem 
                 key={msg.id} 
                 message={msg} 
-                onSelectQuery={(q) => onSendMessage(q, useStream, [])}
+                onSelectQuery={(q) => onSendMessage(q, useStream, [], language)}
               />
             ))}
           </div>

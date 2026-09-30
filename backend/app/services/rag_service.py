@@ -51,10 +51,15 @@ PRAHARI AI Response (in {lang_name} only):"""
 
 # ── Helper Functions ───────────────────────────────────────────────────────────
 
-def _detect_language(query: str):
-    """Detect if query is primarily Hindi (Devanagari) or English."""
+def _detect_language(query: str, user_language: Optional[str] = None):
+    """Detect language preference: explicit user_language takes absolute priority."""
+    if user_language == "hi":
+        return "Hindi", "Respond ENTIRELY in Hindi (Devanagari script). Do NOT use English in your response."
+    if user_language == "en":
+        return "English", "Respond ENTIRELY in English. Do NOT use Hindi or any other language."
+
     devanagari_chars = sum(1 for c in query if '\u0900' <= c <= '\u097F')
-    if devanagari_chars > 2 or devanagari_chars / max(len(query), 1) > 0.3:
+    if devanagari_chars > 2 or (devanagari_chars / max(len(query), 1)) > 0.3:
         return "Hindi", "Respond ENTIRELY in Hindi (Devanagari script). Do NOT use English in your response."
     return "English", "Respond ENTIRELY in English. Do NOT use Hindi or any other language."
 
@@ -100,13 +105,19 @@ def _format_context(docs: List[Document], target_language: str = "English") -> s
     return "\n\n".join(parts)
 
 
-def _format_history(history: Optional[List[Dict]]) -> str:
+def _format_history(history: Optional[List[Dict]], target_language: str = "English") -> str:
     if not history:
         return "None"
     formatted = []
     for msg in history[-4:]:
         role = "Operator" if msg.get("role") == "user" else "PRAHARI AI"
-        formatted.append(f"{role}: {msg.get('content', '')}")
+        content = msg.get('content', '')
+        if target_language == "English" and role == "PRAHARI AI":
+            # Sanitize Hindi out of history to prevent model from imitating previous Hindi turns
+            dev_count = sum(1 for c in content if '\u0900' <= c <= '\u097F')
+            if dev_count > 5 and (dev_count / max(len(content), 1)) > 0.25:
+                content = "[Previous answer provided in Hindi]"
+        formatted.append(f"{role}: {content}")
     return "\n".join(formatted)
 
 
@@ -151,6 +162,7 @@ def query_rag_engine(
     query: str,
     session_history: Optional[List[Dict]] = None,
     document_filter: Optional[str] = None,
+    user_language: Optional[str] = "en",
 ) -> Dict[str, Any]:
     """
     Universal Hybrid Pipeline (Online Cloud Gemini / LLaMA 3.2 Web + Offline Local Failover):
@@ -167,6 +179,8 @@ def query_rag_engine(
 
     ai_cfg = get_persisted_ai_config()
     active_model = ai_cfg.get("active_model", "llama3.2-web")
+
+    lang_name, lang_instruction = _detect_language(query, user_language=user_language)
 
     # 1. Local Hybrid Retrieval (Always available from SQLite/ChromaDB)
     docs = []
@@ -186,8 +200,8 @@ def query_rag_engine(
         trace.append({"step": "network_status", "is_online": has_internet, "active_model": active_model})
 
     if has_internet:
-        context = _format_context(docs)
-        history_str = _format_history(session_history)
+        context = _format_context(docs, target_language=lang_name)
+        history_str = _format_history(session_history, target_language=lang_name)
 
         # A. Live Web Search for up-to-the-minute updates
         web_snippets = search_live_web(query, max_results=4)
@@ -196,7 +210,7 @@ def query_rag_engine(
 
         # B. If user chose Gemini (or default) and has a key
         if active_model.startswith("gemini"):
-            cloud_answer = call_gemini_cloud_llm(query, context, web_snippets, history_str, model_name=active_model)
+            cloud_answer = call_gemini_cloud_llm(query, context, web_snippets, history_str, model_name=active_model, user_language=user_language)
             if cloud_answer:
                 model_label = "Google Gemini 1.5 Pro" if "pro" in active_model else "Google Gemini 1.5 Flash"
                 trace.append({"step": "answer_generation", "mode": f"{model_label} (Cloud Neural AI)"})
@@ -232,7 +246,7 @@ def query_rag_engine(
                     aug_context += "\n\n--- Live Web Updates ---\n" + "\n".join(
                         [f"- [{w['title']}]: {w['snippet']}" for w in web_snippets]
                     )
-                lang_name, lang_instruction = _detect_language(query)
+                lang_name, lang_instruction = _detect_language(query, user_language=user_language)
                 prompt = ChatPromptTemplate.from_template(ANSWER_PROMPT)
                 chain = prompt | llm
                 result = chain.invoke({"context": aug_context, "query": query, "history": history_str, "lang_name": lang_name, "lang_instruction": lang_instruction})
@@ -284,11 +298,11 @@ def query_rag_engine(
     ollama_ready = is_ollama_available()
 
     if ollama_ready:
-        context = _format_context(docs)
-        history_str = _format_history(session_history)
+        context = _format_context(docs, target_language=lang_name)
+        history_str = _format_history(session_history, target_language=lang_name)
         try:
             llm = _get_llm()
-            lang_name, lang_instruction = _detect_language(query)
+            lang_name, lang_instruction = _detect_language(query, user_language=user_language)
             prompt = ChatPromptTemplate.from_template(ANSWER_PROMPT)
             chain = prompt | llm
             result = chain.invoke({
@@ -317,7 +331,7 @@ def query_rag_engine(
             trace.append({"step": "llm_fallback_to_offline_engine", "error": str(err)})
 
     # 4. Sovereign Offline Extractive Safety Engine (100% reliable fallback)
-    res = offline_intelligence.answer_query(query, docs=docs, history=session_history)
+    res = offline_intelligence.answer_query(query, docs=docs, history=session_history, user_language=user_language)
     trace.append({"step": "answer_generation", "mode": res.get("mode", "Sovereign Offline Intelligence")})
 
     latency_ms = int((time.time() - t_start) * 1000)
@@ -340,6 +354,7 @@ async def stream_rag_response(
     query: str,
     session_history: Optional[List[Dict]] = None,
     document_filter: Optional[str] = None,
+    user_language: Optional[str] = "en",
 ) -> AsyncGenerator[str, None]:
     """
     Async generator that yields SSE-compatible token chunks in real-time.
@@ -360,9 +375,9 @@ async def stream_rag_response(
 
     yield f"data: {_json.dumps({'type': 'retrieval', 'docs_found': len(docs)})}\n\n"
 
-    lang_name, lang_instruction = _detect_language(query)
+    lang_name, lang_instruction = _detect_language(query, user_language=user_language)
     context = _format_context(docs, target_language=lang_name)
-    history_str = _format_history(session_history)
+    history_str = _format_history(session_history, target_language=lang_name)
 
     ai_cfg = get_persisted_ai_config()
     active_model = ai_cfg.get("active_model", "llama3.2-web")
@@ -471,7 +486,7 @@ PRAHARI AI Response (in {lang_name} only):"""
             pass
 
     # Mode 3: Sovereign Offline Intelligence Streaming
-    offline_res = offline_intelligence.answer_query(query, docs=docs, history=session_history)
+    offline_res = offline_intelligence.answer_query(query, docs=docs, history=session_history, user_language=user_language)
     answer_text = offline_res["answer"]
     citations = offline_res.get("citations", [])
     follow_up_options = offline_res.get("follow_up_options", [])
