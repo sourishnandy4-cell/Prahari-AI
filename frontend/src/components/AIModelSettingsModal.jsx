@@ -70,29 +70,45 @@ export default function AIModelSettingsModal({
 
   if (!isOpen) return null;
 
-  // Handle paste from clipboard
+  // Handle paste from clipboard with prompt fallback
   const handlePasteFromClipboard = async () => {
     try {
-      const text = await navigator.clipboard.readText();
-      if (text && text.trim()) {
-        const cleaned = text.trim();
-        setApiKey(cleaned);
-        setCopyFeedback(true);
-        setTimeout(() => setCopyFeedback(false), 2000);
-        // Clear any previous error
-        setVerifyResult(null);
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        const text = await navigator.clipboard.readText();
+        if (text && text.trim()) {
+          const cleaned = text.trim().replace(/^["']|["']$/g, '');
+          setApiKey(cleaned);
+          setActiveModel('gemini-1.5-flash');
+          setCopyFeedback(true);
+          setTimeout(() => setCopyFeedback(false), 2500);
+          setVerifyResult(null);
+          return;
+        }
       }
     } catch (err) {
-      alert('Please grant clipboard permission or paste manually into the input box.');
+      console.warn('Clipboard read failed, attempting prompt fallback:', err);
+    }
+    const manual = window.prompt("Paste your Google Gemini API Key here (starts with AIzaSy...):");
+    if (manual && manual.trim()) {
+      const cleaned = manual.trim().replace(/^["']|["']$/g, '');
+      setApiKey(cleaned);
+      setActiveModel('gemini-1.5-flash');
+      setCopyFeedback(true);
+      setTimeout(() => setCopyFeedback(false), 2500);
+      setVerifyResult(null);
     }
   };
 
   // Test / Verify Gemini Key
   const handleVerifyKey = async () => {
-    const keyToTest = apiKey.trim();
+    let keyToTest = apiKey.trim().replace(/^["']|["']$/g, '');
     if (!keyToTest) {
-      setVerifyResult({ valid: false, error: 'Please paste or enter your Gemini API Key first.' });
-      return;
+      if (maskedKey) {
+        keyToTest = "USE_EXISTING";
+      } else {
+        setVerifyResult({ valid: false, error: 'Please paste or enter your Gemini API Key first.' });
+        return;
+      }
     }
 
     setVerifying(true);
@@ -109,6 +125,7 @@ export default function AIModelSettingsModal({
       setVerifyResult(data);
       if (data.valid) {
         setIsConfigured(true);
+        setActiveModel('gemini-1.5-flash');
       }
     } catch (err) {
       setVerifyResult({
@@ -127,11 +144,18 @@ export default function AIModelSettingsModal({
 
     try {
       const targetUrl = apiUrl ? apiUrl('/api/settings/ai-config') : '/api/settings/ai-config';
+      const cleanedKey = apiKey.trim().replace(/^["']|["']$/g, '');
+
+      let targetModel = activeModel;
+      if ((cleanedKey || maskedKey) && (!targetModel || !targetModel.includes('offline'))) {
+        targetModel = 'gemini-1.5-flash';
+      }
+
       const payload = {
-        model: activeModel,
+        model: targetModel,
       };
-      if (apiKey.trim()) {
-        payload.gemini_api_key = apiKey.trim();
+      if (cleanedKey) {
+        payload.gemini_api_key = cleanedKey;
       }
 
       const res = await fetch(targetUrl, {
@@ -143,6 +167,7 @@ export default function AIModelSettingsModal({
       if (res.ok) {
         const data = await res.json();
         setSaveSuccess(true);
+        setActiveModel(data.active_model);
         if (onModelChanged) {
           onModelChanged(data.active_model);
         }
@@ -273,8 +298,12 @@ export default function AIModelSettingsModal({
                       type="password"
                       value={apiKey}
                       onChange={(e) => {
-                        setApiKey(e.target.value);
+                        const val = e.target.value.replace(/^["']|["']$/g, '');
+                        setApiKey(val);
                         setVerifyResult(null);
+                        if (val.trim().length > 10) {
+                          setActiveModel('gemini-1.5-flash');
+                        }
                       }}
                       placeholder={maskedKey ? "Leave blank to keep current key, or paste new key" : "Paste your Google Gemini API key here"}
                       className="w-full px-3.5 py-2.5 rounded-xl bg-zinc-950 border border-zinc-700/80 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-cyan-500 transition-colors font-mono"

@@ -107,7 +107,7 @@ def call_gemini_cloud_llm(
         from google.genai import types
 
         client = genai.Client(api_key=api_key)
-        gemini_model = "gemini-1.5-pro" if "pro" in model_name.lower() else "gemini-1.5-flash"
+        gemini_model = "models/gemini-1.5-pro" if "pro" in model_name.lower() else "models/gemini-1.5-flash"
 
         web_text = ""
         if web_snippets:
@@ -115,10 +115,19 @@ def call_gemini_cloud_llm(
                 [f"• [{w['title']}]({w['url']}): {w['snippet']}" for w in web_snippets]
             )
 
-        prompt = f"""You are PRAHARI AI (Online Cloud Edition), an authoritative Virtual Assistant for Indian Standards (IS codes), Bureau of Indian Standards (BIS) Schemes (SIH Topic 26107), and Industrial Engineering Safety.
+        # Detect language
+        devanagari_count = sum(1 for c in query if '\u0900' <= c <= '\u097F')
+        is_hindi = devanagari_count > 2 or (devanagari_count / max(len(query), 1) > 0.3)
+        lang_target = "Hindi" if is_hindi else "English"
+        lang_directive = "उत्तर केवल हिन्दी (Devanagari script) में दें।" if is_hindi else "Respond ENTIRELY in English. Do NOT use Hindi or Devanagari script."
+
+        prompt = f"""CRITICAL LANGUAGE DIRECTIVE — MANDATORY:
+The user asked in {lang_target}. You MUST write your entire response in {lang_target} ONLY. {lang_directive}
+
+You are PRAHARI AI (Online Cloud Edition), an authoritative Virtual Assistant for Indian Standards (IS codes), Bureau of Indian Standards (BIS) Schemes (SIH Topic 26107), and Industrial Engineering Safety.
 
 Guidelines:
-1. Always respond in the same language as the user. English query → English answer. Hindi query → Hindi answer.
+1. Always respond strictly in {lang_target}.
 2. Provide a comprehensive, clear, accurate, and structured answer. Never loop or repeat phrases.
 3. ALWAYS cite the exact Indian Standard number (e.g. IS 1786:2008, IS 10500:2012, IS 1417:2016) and relevant Clause/Table.
 4. For Industry queries, detail technical SIT parameters (chemical/mechanical tests, tolerances) and mandatory Quality Control Orders (QCO).
@@ -134,14 +143,30 @@ Guidelines:
 
 User Question: {query}
 
-PRAHARI AI Response:"""
+PRAHARI AI Response (in {lang_target} only):"""
 
-        response = client.models.generate_content(
-            model=gemini_model,
-            contents=prompt,
-        )
-        if response and response.text:
-            return response.text.strip()
+        response = None
+        candidate_models = [gemini_model, "gemini-1.5-flash", "models/gemini-1.5-flash", "gemini-2.0-flash"]
+        for m in candidate_models:
+            try:
+                response = client.models.generate_content(
+                    model=m,
+                    contents=prompt,
+                )
+                if response:
+                    break
+            except Exception:
+                continue
+
+        if response:
+            answer = getattr(response, 'text', None)
+            if not answer and hasattr(response, 'candidates') and response.candidates:
+                try:
+                    answer = response.candidates[0].content.parts[0].text
+                except Exception:
+                    answer = None
+            if answer:
+                return answer.strip()
     except Exception as e:
         logger.warning(f"[OnlineAI] Gemini Cloud API error: {e}")
 

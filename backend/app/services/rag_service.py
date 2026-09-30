@@ -21,10 +21,13 @@ from backend.app.services.online_ai_service import (
 
 # ── Prompts ────────────────────────────────────────────────────────────────────
 
-ANSWER_PROMPT = """You are PRAHARI AI, the authoritative Virtual Assistant for Indian Standards (IS codes), Bureau of Indian Standards (BIS) Schemes (SIH Topic 26107), and Industrial Engineering & Operational Safety.
+ANSWER_PROMPT = """CRITICAL LANGUAGE RULE — MUST FOLLOW BEFORE ANYTHING ELSE:
+Detect the language of the User Question below. If it is English → your ENTIRE response MUST be in English only. If it is Hindi → your ENTIRE response MUST be in Hindi only. NEVER switch languages. NEVER respond in Hindi if the user wrote in English.
+
+You are PRAHARI AI, the authoritative Virtual Assistant for Indian Standards (IS codes), Bureau of Indian Standards (BIS) Schemes (SIH Topic 26107), and Industrial Engineering & Operational Safety.
 
 Guidelines:
-1. Always respond in the same language as the user's question. If the user asks in English, reply in fluent, clear English. If the user asks in Hindi, reply in clear, natural Hindi.
+1. LANGUAGE: Mirror the user's language exactly. English question = English answer. Hindi question = Hindi answer. No exceptions.
 2. Provide a structured, concise, and helpful answer. Never loop or repeat phrases.
 3. For Indian Standards (IS codes) & BIS schemes:
    - State the exact Standard Number (e.g. IS 10500:2012, IS 4151:2015, IS 1293:2019, IS 1786:2008) and relevant requirements.
@@ -32,6 +35,8 @@ Guidelines:
    - For consumer queries, explain ISI mark (7-digit CML), Hallmark (6-digit HUID), and complaint lodging via BIS Care App or Helpline (1915).
 4. If the question relates to industrial safety or MRPL refinery SOPs, strictly ground your response in the provided context.
 5. If the answer is not in the context, guide the user to the BIS website (www.bis.gov.in) or Toll-Free Helpline (1800-11-1255).
+
+{lang_instruction}
 
 --- Context from Knowledge Base ---
 {context}
@@ -41,10 +46,17 @@ Guidelines:
 
 User Question: {query}
 
-PRAHARI AI Response:"""
+PRAHARI AI Response (in {lang_name} only):"""
 
 
 # ── Helper Functions ───────────────────────────────────────────────────────────
+
+def _detect_language(query: str):
+    """Detect if query is primarily Hindi (Devanagari) or English."""
+    devanagari_chars = sum(1 for c in query if '\u0900' <= c <= '\u097F')
+    if devanagari_chars > 2 or devanagari_chars / max(len(query), 1) > 0.3:
+        return "Hindi", "Respond ENTIRELY in Hindi (Devanagari script). Do NOT use English in your response."
+    return "English", "Respond ENTIRELY in English. Do NOT use Hindi or any other language."
 
 def is_ollama_available(timeout_sec: float = 0.8) -> bool:
     """Check if the local Ollama server is responsive."""
@@ -67,7 +79,7 @@ def _get_llm(temperature: float = 0.3) -> ChatOllama:
     )
 
 
-def _format_context(docs: List[Document]) -> str:
+def _format_context(docs: List[Document], target_language: str = "English") -> str:
     if not docs:
         return "No specific manual chunks retrieved."
     parts = []
@@ -75,6 +87,15 @@ def _format_context(docs: List[Document]) -> str:
         filename = doc.metadata.get("filename", os.path.basename(doc.metadata.get("source", "MRPL_SOP")))
         page = doc.metadata.get("page", 1)
         content = doc.page_content.strip()
+        if target_language == "English":
+            # Filter out Hindi lines (Devanagari) to prevent LLaMA 3.2 from inadvertently switching languages
+            clean_lines = []
+            for line in content.split("\n"):
+                dev_count = sum(1 for c in line if '\u0900' <= c <= '\u097F')
+                if dev_count > 4 and dev_count / max(len(line), 1) > 0.2:
+                    continue
+                clean_lines.append(line)
+            content = "\n".join(clean_lines).strip()
         parts.append(f"[Document {i}: {filename} | Section/Page {page}]\n{content}")
     return "\n\n".join(parts)
 
@@ -211,9 +232,10 @@ def query_rag_engine(
                     aug_context += "\n\n--- Live Web Updates ---\n" + "\n".join(
                         [f"- [{w['title']}]: {w['snippet']}" for w in web_snippets]
                     )
+                lang_name, lang_instruction = _detect_language(query)
                 prompt = ChatPromptTemplate.from_template(ANSWER_PROMPT)
                 chain = prompt | llm
-                result = chain.invoke({"context": aug_context, "query": query, "history": history_str})
+                result = chain.invoke({"context": aug_context, "query": query, "history": history_str, "lang_name": lang_name, "lang_instruction": lang_instruction})
                 answer_text = result.content.strip()
                 trace.append({"step": "answer_generation", "mode": f"Online Web-Augmented Ollama ({settings.LLM_MODEL})"})
 
@@ -266,12 +288,15 @@ def query_rag_engine(
         history_str = _format_history(session_history)
         try:
             llm = _get_llm()
+            lang_name, lang_instruction = _detect_language(query)
             prompt = ChatPromptTemplate.from_template(ANSWER_PROMPT)
             chain = prompt | llm
             result = chain.invoke({
                 "context": context,
                 "query": query,
                 "history": history_str,
+                "lang_name": lang_name,
+                "lang_instruction": lang_instruction,
             })
             answer_text = result.content.strip()
             trace.append({"step": "answer_generation", "mode": f"Local Offline Neural LLM ({settings.LLM_MODEL})"})
@@ -335,12 +360,92 @@ async def stream_rag_response(
 
     yield f"data: {_json.dumps({'type': 'retrieval', 'docs_found': len(docs)})}\n\n"
 
+    lang_name, lang_instruction = _detect_language(query)
+    context = _format_context(docs, target_language=lang_name)
+    history_str = _format_history(session_history)
+
+    ai_cfg = get_persisted_ai_config()
+    active_model = ai_cfg.get("active_model", "llama3.2-web")
+    gemini_key = ai_cfg.get("gemini_api_key") or os.getenv("GEMINI_API_KEY", "")
+
+    # Mode 1: Google Gemini Streaming (when Gemini is active or configured)
+    if gemini_key and ("gemini" in active_model.lower() or not is_ollama_available()):
+        try:
+            import queue
+            import threading
+            from google import genai
+
+            client = genai.Client(api_key=gemini_key)
+            g_model = "models/gemini-1.5-pro" if "pro" in active_model.lower() else "models/gemini-1.5-flash"
+
+            prompt = f"""CRITICAL LANGUAGE DIRECTIVE — MANDATORY:
+The user asked in {lang_name}. You MUST write your entire response in {lang_name} ONLY. {lang_instruction}
+
+You are PRAHARI AI (Online Cloud Edition), an authoritative Virtual Assistant for Indian Standards (IS codes), Bureau of Indian Standards (BIS) Schemes (SIH Topic 26107), and Industrial Engineering Safety.
+
+Guidelines:
+1. Always respond strictly in {lang_name}.
+2. Provide a comprehensive, clear, accurate, and structured answer. Never loop or repeat phrases.
+3. ALWAYS cite the exact Indian Standard number (e.g. IS 1786:2008, IS 10500:2012, IS 1417:2016) and relevant Clause/Table.
+4. For Industry queries, detail technical SIT parameters (chemical/mechanical tests, tolerances) and mandatory Quality Control Orders (QCO).
+5. For Consumer queries, explain ISI mark (7-digit CML), Hallmark (6-digit HUID), and complaint procedures via the BIS Care App and National Consumer Helpline (1915).
+
+--- Context from Ingested Regulatory Standards ---
+{context}
+
+--- Conversation History ---
+{history_str}
+
+User Question: {query}
+
+PRAHARI AI Response (in {lang_name} only):"""
+
+            token_queue = queue.Queue()
+
+            def _stream_worker():
+                try:
+                    stream_res = client.models.generate_content_stream(model=g_model, contents=prompt)
+                    for chunk in stream_res:
+                        txt = getattr(chunk, 'text', None)
+                        if txt:
+                            token_queue.put(("token", txt))
+                    token_queue.put(("end", None))
+                except Exception as stream_err:
+                    token_queue.put(("error", str(stream_err)))
+
+            worker_thread = threading.Thread(target=_stream_worker, daemon=True)
+            worker_thread.start()
+
+            gemini_streamed_any = False
+            while True:
+                try:
+                    msg_type, val = token_queue.get_nowait()
+                    if msg_type == "token":
+                        gemini_streamed_any = True
+                        yield f"data: {_json.dumps({'type': 'token', 'text': val})}\n\n"
+                    elif msg_type == "end":
+                        break
+                    elif msg_type == "error":
+                        if not gemini_streamed_any:
+                            raise Exception(val)
+                        break
+                except queue.Empty:
+                    if not worker_thread.is_alive() and token_queue.empty():
+                        break
+                    await asyncio.sleep(0.015)
+
+            if gemini_streamed_any:
+                citations = _extract_citations(docs) if docs else []
+                latency_ms = int((time.time() - t_start) * 1000)
+                model_label = "Google Gemini 1.5 Pro" if "pro" in active_model.lower() else "Google Gemini 1.5 Flash"
+                yield f"data: {_json.dumps({'type': 'done', 'rewritten_query': query, 'citations': citations, 'model': model_label, 'latency_ms': latency_ms})}\n\n"
+                return
+        except Exception as gemini_err:
+            logger.warning(f"[StreamRAG] Gemini stream failed: {gemini_err}. Falling back...")
+
+    # Mode 2: Local Ollama Neural LLM Streaming
     ollama_ready = is_ollama_available()
-
     if ollama_ready:
-        context = _format_context(docs)
-        history_str = _format_history(session_history)
-
         try:
             llm = _get_llm()
             prompt = ChatPromptTemplate.from_template(ANSWER_PROMPT)
@@ -351,6 +456,8 @@ async def stream_rag_response(
                 "context": context,
                 "query": query,
                 "history": history_str,
+                "lang_name": lang_name,
+                "lang_instruction": lang_instruction,
             }):
                 token = chunk.content
                 full_text += token
@@ -363,7 +470,7 @@ async def stream_rag_response(
         except Exception:
             pass
 
-    # Sovereign Offline Streaming
+    # Mode 3: Sovereign Offline Intelligence Streaming
     offline_res = offline_intelligence.answer_query(query, docs=docs, history=session_history)
     answer_text = offline_res["answer"]
     citations = offline_res.get("citations", [])

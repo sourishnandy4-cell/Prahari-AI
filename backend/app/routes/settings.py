@@ -120,20 +120,24 @@ async def get_ai_config():
 async def update_ai_config(req: AIConfigRequest):
     cfg = _read_persisted_config()
 
-    if req.model:
-        cfg["active_model"] = req.model
-
     if req.gemini_api_key is not None:
-        key = req.gemini_api_key.strip()
+        key = req.gemini_api_key.strip().strip("'\"")
         cfg["gemini_api_key"] = key
         # Also set in environment for active process
         if key:
             os.environ["GEMINI_API_KEY"] = key
-            # If user added a Gemini key and hadn't picked a model, switch to gemini-1.5-flash
-            if not req.model:
+            # If user provided a Gemini key and didn't explicitly choose offline, switch to gemini-1.5-flash
+            if not req.model or "offline" not in req.model.lower():
                 cfg["active_model"] = "gemini-1.5-flash"
         else:
             os.environ.pop("GEMINI_API_KEY", None)
+
+    if req.model:
+        # If user picked gemini but no key exists, don't break
+        if "gemini" in req.model.lower() and not cfg.get("gemini_api_key"):
+            cfg["active_model"] = "llama3.2-web"
+        else:
+            cfg["active_model"] = req.model
 
     _write_persisted_config(cfg)
 
@@ -147,7 +151,11 @@ async def update_ai_config(req: AIConfigRequest):
 
 @router.post("/verify-gemini-token")
 async def verify_gemini_token(req: VerifyTokenRequest):
-    key = req.gemini_api_key.strip()
+    key = req.gemini_api_key.strip().strip("'\"")
+    if not key or key == "USE_EXISTING":
+        cfg = _read_persisted_config()
+        key = cfg.get("gemini_api_key") or os.environ.get("GEMINI_API_KEY", "")
+
     if not key:
         raise HTTPException(status_code=400, detail="Gemini API Key cannot be empty.")
 
@@ -155,16 +163,35 @@ async def verify_gemini_token(req: VerifyTokenRequest):
         from google import genai
         client = genai.Client(api_key=key)
 
-        # Quick test generation with minimal tokens
-        response = client.models.generate_content(
-            model="gemini-1.5-flash",
-            contents="Say 'OK'",
-        )
-        if response and response.text:
+        # Quick test with minimal tokens trying supported models
+        answer = None
+        verified_model = "gemini-1.5-flash"
+        for test_model in ["models/gemini-1.5-flash", "gemini-1.5-flash", "gemini-2.0-flash", "models/gemini-2.0-flash"]:
+            try:
+                response = client.models.generate_content(
+                    model=test_model,
+                    contents="Say OK",
+                )
+                answer = getattr(response, 'text', None)
+                if not answer and hasattr(response, 'candidates') and response.candidates:
+                    try:
+                        answer = response.candidates[0].content.parts[0].text
+                    except Exception:
+                        answer = None
+                if answer:
+                    verified_model = test_model.removeprefix("models/")
+                    break
+            except Exception as test_err:
+                err_str = str(test_err)
+                if "API_KEY_INVALID" in err_str or "PERMISSION_DENIED" in err_str or "quota" in err_str.lower():
+                    raise test_err
+                continue
+
+        if answer:
             return {
                 "valid": True,
-                "message": "Token successfully verified! Connected to Google Gemini 1.5 Flash.",
-                "model": "gemini-1.5-flash",
+                "message": f"Token successfully verified! Connected to Google Gemini Flash API ({verified_model}).",
+                "model": verified_model,
                 "free_tier_limits": "15 Requests/Min, 1,500 Requests/Day Free"
             }
         else:
@@ -172,9 +199,11 @@ async def verify_gemini_token(req: VerifyTokenRequest):
     except Exception as e:
         err_msg = str(e)
         if "API_KEY_INVALID" in err_msg or "400" in err_msg or "invalid" in err_msg.lower():
-            err_msg = "Invalid API Key. Please verify you copied the full key starting with 'AIzaSy' from Google AI Studio."
+            err_msg = "Invalid API Key. Please copy the full key starting with 'AIzaSy' from Google AI Studio."
         elif "ResourceExhausted" in err_msg or "429" in err_msg or "quota" in err_msg.lower():
-            err_msg = "Quota exceeded on this key. Please check your Google AI Studio quota."
+            err_msg = "Quota exceeded. Please check your Google AI Studio quota limits."
+        elif "PERMISSION_DENIED" in err_msg or "403" in err_msg:
+            err_msg = "Permission denied. Make sure the Gemini API is enabled for this key in Google AI Studio."
         return {
             "valid": False,
             "error": err_msg
