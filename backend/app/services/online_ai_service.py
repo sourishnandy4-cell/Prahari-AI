@@ -103,11 +103,11 @@ def call_gemini_cloud_llm(
         return None
 
     try:
-        import google.generativeai as genai
-        genai.configure(api_key=api_key)
+        from google import genai
+        from google.genai import types
 
+        client = genai.Client(api_key=api_key)
         gemini_model = "gemini-1.5-pro" if "pro" in model_name.lower() else "gemini-1.5-flash"
-        model = genai.GenerativeModel(gemini_model)
 
         web_text = ""
         if web_snippets:
@@ -118,12 +118,12 @@ def call_gemini_cloud_llm(
         prompt = f"""You are PRAHARI AI (Online Cloud Edition), an authoritative Virtual Assistant for Indian Standards (IS codes), Bureau of Indian Standards (BIS) Schemes (SIH Topic 26107), and Industrial Engineering Safety.
 
 Guidelines:
-1. Provide a comprehensive, clear, accurate, and structured answer.
-2. ALWAYS cite the exact Indian Standard number (e.g. IS 1786:2008, IS 10500:2012, IS 1417:2016) and relevant Clause/Table.
-3. For Industry queries, detail technical SIT parameters (chemical/mechanical tests, tolerances) and mandatory Quality Control Orders (QCO).
-4. For Consumer queries, explain ISI mark (7-digit CML), Hallmark (6-digit HUID), and complaint procedures via the BIS Care App and National Consumer Helpline (1915).
-5. If live web data provides recent notifications or amendments, incorporate them with markdown citations.
-6. If the user asks in Hindi, answer fluently in Hindi with appropriate technical terminology.
+1. Always respond in the same language as the user. English query → English answer. Hindi query → Hindi answer.
+2. Provide a comprehensive, clear, accurate, and structured answer. Never loop or repeat phrases.
+3. ALWAYS cite the exact Indian Standard number (e.g. IS 1786:2008, IS 10500:2012, IS 1417:2016) and relevant Clause/Table.
+4. For Industry queries, detail technical SIT parameters (chemical/mechanical tests, tolerances) and mandatory Quality Control Orders (QCO).
+5. For Consumer queries, explain ISI mark (7-digit CML), Hallmark (6-digit HUID), and complaint procedures via the BIS Care App and National Consumer Helpline (1915).
+6. If live web data provides recent notifications or amendments, incorporate them with markdown citations.
 
 --- Context from Ingested Regulatory Standards ---
 {context}
@@ -136,7 +136,10 @@ User Question: {query}
 
 PRAHARI AI Response:"""
 
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(
+            model=gemini_model,
+            contents=prompt,
+        )
         if response and response.text:
             return response.text.strip()
     except Exception as e:

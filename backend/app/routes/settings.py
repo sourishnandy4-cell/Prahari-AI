@@ -152,13 +152,15 @@ async def verify_gemini_token(req: VerifyTokenRequest):
         raise HTTPException(status_code=400, detail="Gemini API Key cannot be empty.")
 
     try:
-        import google.generativeai as genai
-        genai.configure(api_key=key)
+        from google import genai
+        client = genai.Client(api_key=key)
 
         # Quick test generation with minimal tokens
-        model = genai.GenerativeModel("gemini-1.5-flash")
-        resp = model.generate_content("Say 'OK'")
-        if resp and resp.text:
+        response = client.models.generate_content(
+            model="gemini-1.5-flash",
+            contents="Say 'OK'",
+        )
+        if response and response.text:
             return {
                 "valid": True,
                 "message": "Token successfully verified! Connected to Google Gemini 1.5 Flash.",
@@ -169,9 +171,9 @@ async def verify_gemini_token(req: VerifyTokenRequest):
             raise Exception("No response received from Google Gemini API.")
     except Exception as e:
         err_msg = str(e)
-        if "API_KEY_INVALID" in err_msg or "400" in err_msg:
+        if "API_KEY_INVALID" in err_msg or "400" in err_msg or "invalid" in err_msg.lower():
             err_msg = "Invalid API Key. Please verify you copied the full key starting with 'AIzaSy' from Google AI Studio."
-        elif "ResourceExhausted" in err_msg or "429" in err_msg:
+        elif "ResourceExhausted" in err_msg or "429" in err_msg or "quota" in err_msg.lower():
             err_msg = "Quota exceeded on this key. Please check your Google AI Studio quota."
         return {
             "valid": False,
