@@ -24,16 +24,16 @@ from backend.app.services.online_ai_service import (
 ANSWER_PROMPT = """You are PRAHARI AI, the authoritative Virtual Assistant for Indian Standards (IS codes), Bureau of Indian Standards (BIS) Schemes (SIH Topic 26107), and Industrial Engineering & Operational Safety.
 
 Guidelines:
-1. When answering questions regarding Indian Standards (IS codes), BIS certification schemes (Scheme-I, CRS Scheme-II, FMCS), ISI mark verification, Gold/Silver hallmarking (6-digit HUID), consumer complaints, or quality control orders (QCO):
-   - ALWAYS name the exact Standard Number (e.g. IS 10500:2012, IS 14543:2004, IS 1293:2019, IS 1786:2008, IS 1417:2016) and the specific Clause it came from.
-   - For industry Q&A ('Which IS standard applies to my product?' or 'What testing is needed?'), state the exact standard, QCO compliance status, and mandatory routine/type tests.
-   - For consumer Q&A, explain ISI mark checks (7-digit CML number), Gold Hallmark verification (3 marks: BIS logo, Fineness, 6-digit HUID), and complaint process via the BIS Care App and National Consumer Helpline (1800-11-1255 / 1915).
-   - If the user asks in Hindi, answer in clear, polite Hindi with accurate technical terminology.
-   - "I don't know" handling: If the answer is not in the documents or repository, explicitly state so and point to the BIS Toll-Free Helpline (1800-11-1255) and official portal (www.bis.gov.in) instead of guessing.
-2. When the query relates to MRPL refinery safety, emergency shutdowns, H2S limits, PSV testing, or hazardous zone permits, strictly ground your response in the provided MRPL SOP context.
-3. If the user asks a greeting, math, general science, or coding question, answer naturally, helpfully, and authoritatively.
+1. Always respond in the same language as the user's question. If the user asks in English, reply in fluent, clear English. If the user asks in Hindi, reply in clear, natural Hindi.
+2. Provide a structured, concise, and helpful answer. Never loop or repeat phrases.
+3. For Indian Standards (IS codes) & BIS schemes:
+   - State the exact Standard Number (e.g. IS 10500:2012, IS 4151:2015, IS 1293:2019, IS 1786:2008) and relevant requirements.
+   - For industry queries, describe technical testing (impact, penetration, retention) and mandatory Quality Control Orders (QCO).
+   - For consumer queries, explain ISI mark (7-digit CML), Hallmark (6-digit HUID), and complaint lodging via BIS Care App or Helpline (1915).
+4. If the question relates to industrial safety or MRPL refinery SOPs, strictly ground your response in the provided context.
+5. If the answer is not in the context, guide the user to the BIS website (www.bis.gov.in) or Toll-Free Helpline (1800-11-1255).
 
---- Context from Searchable Standards & Manuals Knowledge Base ---
+--- Context from Knowledge Base ---
 {context}
 
 --- Conversation History ---
@@ -56,11 +56,13 @@ def is_ollama_available(timeout_sec: float = 0.8) -> bool:
         return False
 
 
-def _get_llm(temperature: float = 0.1) -> ChatOllama:
+def _get_llm(temperature: float = 0.3) -> ChatOllama:
     return ChatOllama(
         model=settings.LLM_MODEL,
         base_url=settings.OLLAMA_BASE_URL,
         temperature=temperature,
+        repeat_penalty=1.2,
+        top_p=0.9,
         num_ctx=2048,
     )
 
@@ -106,6 +108,22 @@ def _extract_citations(docs: List[Document]) -> List[Dict[str, Any]]:
     return citations
 
 
+def get_persisted_ai_config() -> Dict[str, Any]:
+    """Reads persisted AI configuration (active model & key) from data/ai_config.json."""
+    config_path = os.path.join(settings.DATA_DIR, "ai_config.json")
+    if os.path.exists(config_path):
+        try:
+            import json
+            with open(config_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {
+        "active_model": "llama3.2-web",
+        "gemini_api_key": os.getenv("GEMINI_API_KEY", "")
+    }
+
+
 # ── Core Hybrid RAG Pipeline ──────────────────────────────────────────────────
 
 def query_rag_engine(
@@ -114,20 +132,20 @@ def query_rag_engine(
     document_filter: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
-    Main Universal Hybrid Pipeline (Online Cloud AI + Offline Neural Failover):
-      1. Check internet connectivity.
-      2. If online:
-         - Live Web Search (BIS notifications, QCOs, real-time standards)
-         - If Gemini configured: run Gemini 1.5/2.0 Flash
-         - If Ollama running: run Ollama augmented with real-time web context
-         - Else: synthesize live web search with standards database
-      3. If offline (or online times out):
-         - Hybrid Dense Vector + BM25Okapi local retrieval
-         - If Ollama running: run local Ollama neural model (llama3.2)
-         - Else: run Sovereign Offline Intelligence Engine (resilient air-gapped)
+    Universal Hybrid Pipeline (Online Cloud Gemini / LLaMA 3.2 Web + Offline Local Failover):
+      1. Reads active_model preference from user settings (gemini-1.5-flash, gemini-1.5-pro, llama3.2-web, llama3.2-offline).
+      2. If offline model requested, immediately routes to local neural engine.
+      3. If online requested, checks internet connectivity:
+         - Fetches live web updates (BIS QCOs, Gazette notifications).
+         - If Gemini selected & key present -> runs Google Gemini 1.5 Flash/Pro.
+         - If LLaMA 3.2 Web selected -> runs local LLaMA 3.2 augmented with live web data.
+      4. If internet drops or external API fails -> automatically fails over to local LLaMA 3.2 / Sovereign Engine.
     """
     t_start = time.time()
     trace = []
+
+    ai_cfg = get_persisted_ai_config()
+    active_model = ai_cfg.get("active_model", "llama3.2-web")
 
     # 1. Local Hybrid Retrieval (Always available from SQLite/ChromaDB)
     docs = []
@@ -137,9 +155,14 @@ def query_rag_engine(
     except Exception as e:
         trace.append({"step": "hybrid_retrieval", "error": str(e)})
 
-    # 2. Check Internet Connectivity for Online Mode
-    has_internet = is_internet_connected(timeout=0.8)
-    trace.append({"step": "network_status", "is_online": has_internet})
+    # 2. Check if user explicitly forced 100% Offline Mode
+    if active_model == "llama3.2-offline":
+        trace.append({"step": "user_preference", "mode": "Forced 100% Offline Air-Gapped"})
+        has_internet = False
+    else:
+        # Check Internet Connectivity
+        has_internet = is_internet_connected(timeout=0.8)
+        trace.append({"step": "network_status", "is_online": has_internet, "active_model": active_model})
 
     if has_internet:
         context = _format_context(docs)
@@ -150,32 +173,36 @@ def query_rag_engine(
         if web_snippets:
             trace.append({"step": "live_web_search", "snippets_found": len(web_snippets)})
 
-        # B. Try Cloud Generative AI (Gemini 1.5/2.0)
-        cloud_answer = call_gemini_cloud_llm(query, context, web_snippets, history_str)
-        if cloud_answer:
-            trace.append({"step": "answer_generation", "mode": "Google Gemini (Cloud Neural AI)"})
-            citations = _extract_citations(docs) if docs else []
-            for w in web_snippets[:3]:
-                citations.append({
-                    "document": w.get("url", "Web"),
-                    "page": 1,
-                    "snippet": w.get("snippet", "")[:200] + "...",
-                    "standard": w.get("title", "")[:40],
-                    "clause": "Live Web Source",
-                })
-            return {
-                "query": query,
-                "rewritten_query": query,
-                "answer": cloud_answer,
-                "citations": citations,
-                "model": "Gemini 1.5 Flash (Online Cloud AI)",
-                "mode": "Online Cloud Neural AI",
-                "hops": 1,
-                "latency_ms": int((time.time() - t_start) * 1000),
-                "execution_trace": trace,
-            }
+        # B. If user chose Gemini (or default) and has a key
+        if active_model.startswith("gemini"):
+            cloud_answer = call_gemini_cloud_llm(query, context, web_snippets, history_str, model_name=active_model)
+            if cloud_answer:
+                model_label = "Google Gemini 1.5 Pro" if "pro" in active_model else "Google Gemini 1.5 Flash"
+                trace.append({"step": "answer_generation", "mode": f"{model_label} (Cloud Neural AI)"})
+                citations = _extract_citations(docs) if docs else []
+                for w in web_snippets[:3]:
+                    citations.append({
+                        "document": w.get("url", "Web"),
+                        "page": 1,
+                        "snippet": w.get("snippet", "")[:200] + "...",
+                        "standard": w.get("title", "")[:40],
+                        "clause": "Live Web Source",
+                    })
+                return {
+                    "query": query,
+                    "rewritten_query": query,
+                    "answer": cloud_answer,
+                    "citations": citations,
+                    "model": f"{model_label} (Live Online)",
+                    "mode": "Online Cloud Neural AI",
+                    "hops": 1,
+                    "latency_ms": int((time.time() - t_start) * 1000),
+                    "execution_trace": trace,
+                }
+            else:
+                trace.append({"step": "gemini_unavailable", "reason": "No API key or quota issue. Falling back to local neural engine."})
 
-        # C. If Ollama is available, augment Ollama with live web data
+        # C. If LLaMA 3.2 + Web (or Gemini fallback) and Ollama is available
         if is_ollama_available():
             try:
                 llm = _get_llm()
@@ -230,7 +257,7 @@ def query_rag_engine(
                 "execution_trace": trace,
             }
 
-    # 3. Offline Mode (When device has NO internet or internet check timed out)
+    # 3. Offline Mode (When device has NO internet, user picked offline, or external API failed)
     trace.append({"step": "offline_mode_active", "reason": "No internet connection or air-gapped mode"})
     ollama_ready = is_ollama_available()
 

@@ -25,7 +25,9 @@ export default function Sidebar({
   onReplayIntro,
   isOpen = true,
   isMobile = false,
-  onToggleSidebar
+  onToggleSidebar,
+  currentModel,
+  onOpenModelModal
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [editingSessionId, setEditingSessionId] = useState(null);
@@ -301,17 +303,30 @@ export default function Sidebar({
           </span>
         </button>
 
-        {/* Offline Security Status Pill */}
-        <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-zinc-900/40 border border-zinc-800/50 text-[11px] font-mono text-zinc-400">
-          <div className="flex items-center gap-1.5">
+        {/* AI Engine & Model Status / Switcher Button */}
+        <button
+          type="button"
+          onClick={onOpenModelModal}
+          className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-zinc-900/60 hover:bg-zinc-800/80 border border-zinc-800/60 hover:border-cyan-500/50 text-[11px] font-mono text-zinc-300 transition-all cursor-pointer group"
+          title="Click to switch AI Model or configure free Google Gemini Token"
+        >
+          <div className="flex items-center gap-2">
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                currentModel?.startsWith('gemini') ? 'bg-cyan-400' : currentModel === 'llama3.2-offline' ? 'bg-amber-400' : 'bg-emerald-400'
+              }`}></span>
+              <span className={`relative inline-flex rounded-full h-2 w-2 ${
+                currentModel?.startsWith('gemini') ? 'bg-cyan-500' : currentModel === 'llama3.2-offline' ? 'bg-amber-500' : 'bg-emerald-500'
+              }`}></span>
             </span>
-            <span className="text-zinc-300 font-sans text-xs">Offline Sovereign</span>
+            <span className="text-zinc-200 font-sans text-xs font-medium truncate">
+              {currentModel?.startsWith('gemini') 
+                ? (currentModel.includes('pro') ? '⚡ Gemini 1.5 Pro' : '⚡ Gemini Flash')
+                : currentModel === 'llama3.2-offline' ? '🔒 Offline LLaMA' : '🌐 LLaMA + Web'}
+            </span>
           </div>
-          <span className="text-[10px] text-zinc-400">BIS Agent</span>
-        </div>
+          <span className="text-[10px] text-cyan-400 font-sans group-hover:underline">Settings ↗</span>
+        </button>
 
         {/* Replay Intro Link */}
         <div className="flex items-center justify-between px-2 pt-0.5">

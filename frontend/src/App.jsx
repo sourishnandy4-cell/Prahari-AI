@@ -3,6 +3,7 @@ import { AnimatePresence } from 'framer-motion';
 import Sidebar from './components/Sidebar';
 import ChatWindow from './components/ChatWindow';
 import FileUploadModal from './components/FileUploadModal';
+import AIModelSettingsModal from './components/AIModelSettingsModal';
 import SplashScreen from './components/SplashScreen';
 import GetStartedScreen from './components/GetStartedScreen';
 import { useIsMobile } from './hooks/useMediaQuery';
@@ -27,6 +28,8 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isModelModalOpen, setIsModelModalOpen] = useState(false);
+  const [currentModel, setCurrentModel] = useState('llama3.2-web');
   const [selectedQuery, setSelectedQuery] = useState('');
   const [indexedFiles, setIndexedFiles] = useState([]);
   const abortRef = useRef(null);
@@ -193,6 +196,14 @@ export default function App() {
           const data = await docRes.json();
           const docs = Array.isArray(data) ? data : (data.documents || []);
           setIndexedFiles(docs);
+        }
+      } catch {}
+
+      try {
+        const cfgRes = await fetch(apiUrl('/api/settings/ai-config'));
+        if (cfgRes.ok) {
+          const cfgData = await cfgRes.json();
+          if (cfgData.active_model) setCurrentModel(cfgData.active_model);
         }
       } catch {}
     };
@@ -521,6 +532,8 @@ export default function App() {
           onRenameSession={handleRenameSession}
           onOpenUploadModal={() => setIsUploadModalOpen(true)}
           onReplayIntro={handleReplayIntro}
+          currentModel={currentModel}
+          onOpenModelModal={() => setIsModelModalOpen(true)}
         />
 
         <ChatWindow
@@ -535,6 +548,8 @@ export default function App() {
           isMobile={isMobile}
           onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
           onNewChat={handleNewChat}
+          currentModel={currentModel}
+          onOpenModelModal={() => setIsModelModalOpen(true)}
         />
 
         <FileUploadModal
@@ -543,6 +558,14 @@ export default function App() {
           onIngestSuccess={handleIngestSuccess}
           indexedFiles={indexedFiles}
           apiUrl={apiUrl}
+        />
+
+        <AIModelSettingsModal
+          isOpen={isModelModalOpen}
+          onClose={() => setIsModelModalOpen(false)}
+          apiUrl={apiUrl}
+          currentModel={currentModel}
+          onModelChanged={(newModel) => setCurrentModel(newModel)}
         />
       </div>
     </>

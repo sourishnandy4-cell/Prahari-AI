@@ -71,17 +71,34 @@ def search_live_web(query: str, max_results: int = 5) -> List[Dict[str, str]]:
     return results
 
 
+def get_gemini_api_key() -> Optional[str]:
+    """Retrieve Gemini API key from environment or persisted config."""
+    key = os.getenv("GEMINI_API_KEY") or getattr(settings, "GEMINI_API_KEY", None)
+    if not key:
+        config_path = os.path.join(settings.DATA_DIR, "ai_config.json")
+        if os.path.exists(config_path):
+            try:
+                import json
+                with open(config_path, "r", encoding="utf-8") as f:
+                    cfg = json.load(f)
+                    key = cfg.get("gemini_api_key", "").strip()
+            except Exception:
+                pass
+    return key if key else None
+
+
 def call_gemini_cloud_llm(
     query: str,
     context: str,
     web_snippets: List[Dict[str, str]],
-    history_str: str = ""
+    history_str: str = "",
+    model_name: str = "gemini-1.5-flash"
 ) -> Optional[str]:
     """
     Invokes Google Gemini Cloud AI for dynamic, state-of-the-art generative responses
     grounded in both local standards and live web snippets.
     """
-    api_key = os.getenv("GEMINI_API_KEY") or getattr(settings, "GEMINI_API_KEY", None)
+    api_key = get_gemini_api_key()
     if not api_key:
         return None
 
@@ -89,7 +106,8 @@ def call_gemini_cloud_llm(
         import google.generativeai as genai
         genai.configure(api_key=api_key)
 
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        gemini_model = "gemini-1.5-pro" if "pro" in model_name.lower() else "gemini-1.5-flash"
+        model = genai.GenerativeModel(gemini_model)
 
         web_text = ""
         if web_snippets:

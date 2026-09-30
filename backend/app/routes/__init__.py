@@ -5,3 +5,4 @@ from backend.app.routes.sessions import router as sessions_router
 from backend.app.routes.documents import router as documents_router
 from backend.app.routes.telemetry import router as telemetry_router
 from backend.app.routes.bis import bis_router
+from backend.app.routes.settings import router as settings_router

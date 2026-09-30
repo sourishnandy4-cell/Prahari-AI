@@ -25,7 +25,9 @@ import {
   Scale,
   Award,
   HelpCircle,
-  PhoneCall
+  PhoneCall,
+  Zap,
+  Globe
 } from 'lucide-react';
 import MessageItem from './MessageItem';
 import LottieLoader from './LottieLoader';
@@ -223,7 +225,9 @@ export default function ChatWindow({
   isSidebarOpen,
   isMobile = false,
   onToggleSidebar,
-  onNewChat
+  onNewChat,
+  currentModel,
+  onOpenModelModal
 }) {
   const [inputQuery, setInputQuery] = useState('');
   const [useStream, setUseStream] = useState(true);
@@ -466,8 +470,39 @@ export default function ChatWindow({
           </div>
         </div>
 
-        {/* Right Controls: Language Selector, Streaming Toggle, New Chat, Clear */}
+        {/* Right Controls: Model Switcher, Language Selector, Streaming Toggle, New Chat, Clear */}
         <div className="flex items-center gap-2">
+          {/* Active Model Selector Button */}
+          <button
+            type="button"
+            onClick={onOpenModelModal}
+            className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/80 text-zinc-200 font-medium transition-all cursor-pointer shadow-sm hover:border-cyan-500/80 group"
+            title="Change AI Model or configure free Google Gemini Token"
+          >
+            {currentModel?.startsWith('gemini') ? (
+              <>
+                <Zap className="w-3.5 h-3.5 text-cyan-400 group-hover:scale-110 transition-transform shrink-0" />
+                <span className="font-semibold text-cyan-300 hidden sm:inline">
+                  {currentModel.includes('pro') ? 'Gemini 1.5 Pro' : 'Gemini Flash'}
+                </span>
+                <span className="font-semibold text-cyan-300 sm:hidden">Gemini</span>
+              </>
+            ) : currentModel === 'llama3.2-offline' ? (
+              <>
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-400 group-hover:scale-110 transition-transform shrink-0" />
+                <span className="font-semibold text-amber-300 hidden sm:inline">Offline LLaMA</span>
+                <span className="font-semibold text-amber-300 sm:hidden">Offline</span>
+              </>
+            ) : (
+              <>
+                <Globe className="w-3.5 h-3.5 text-emerald-400 group-hover:scale-110 transition-transform shrink-0" />
+                <span className="font-semibold text-emerald-300 hidden sm:inline">LLaMA + Web</span>
+                <span className="font-semibold text-emerald-300 sm:hidden">LLaMA</span>
+              </>
+            )}
+            <span className="text-[9px] text-zinc-500 group-hover:text-zinc-300 ml-0.5">▼</span>
+          </button>
+
           {/* Bilingual English / Hindi Toggle */}
           <button
             type="button"

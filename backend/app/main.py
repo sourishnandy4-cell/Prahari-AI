@@ -17,6 +17,7 @@ from backend.app.routes import (
     documents_router,
     telemetry_router,
     bis_router,
+    settings_router,
 )
 
 
@@ -133,6 +134,7 @@ app.include_router(sessions_router,  prefix="/api", tags=["Sessions"])
 app.include_router(documents_router, prefix="/api", tags=["Documents"])
 app.include_router(telemetry_router, prefix="/api", tags=["Telemetry"])
 app.include_router(bis_router,       prefix="/api", tags=["BIS Standards"])
+app.include_router(settings_router,  prefix="/api", tags=["AI Settings & Models"])
 
 
 # ── Root ───────────────────────────────────────────────────────────────────────
