@@ -61,20 +61,20 @@ class OfflineIntelligenceEngine:
         greeting_resp = self._check_greeting(q_lower, is_hi=is_hi)
         if greeting_resp:
             return {
-                "answer": sovereign_guardrails.append_sovereign_footer(greeting_resp, q_clean),
+                "answer": greeting_resp,
                 "intent": "greeting",
                 "citations": [],
-                "mode": "Sovereign Offline Conversational Engine"
+                "mode": "Sovereign Conversational Engine"
             }
 
         # 4. Identity & Sovereign Capabilities
         identity_resp = self._check_identity(q_lower, is_hi=is_hi)
         if identity_resp:
             return {
-                "answer": sovereign_guardrails.append_sovereign_footer(identity_resp, q_clean),
+                "answer": identity_resp,
                 "intent": "identity",
                 "citations": [],
-                "mode": "Sovereign Offline Conversational Engine"
+                "mode": "Sovereign Conversational Engine"
             }
 
         # 5. Bureau of Indian Standards (BIS) & Indian Standards (IS Codes) Brain (SIH Topic 26107)
@@ -880,22 +880,33 @@ class OfflineIntelligenceEngine:
             )
 
         # Basic greetings
-        greetings = ["hi", "hello", "hey", "good morning", "good afternoon", "good evening", "namaste", "howdy", "sup", "greetings", "yo", "नमस्ते", "प्रणाम"]
-        if any(w in greetings for w in words[:3]) and len(words) <= 5:
+        greetings = [
+            "hi", "hello", "hey", "good morning", "good afternoon", "good evening",
+            "namaste", "howdy", "sup", "greetings", "yo", "hlo", "helo", "hola",
+            "नमस्ते", "प्रणाम", "नमस्कार", "हेलो", "हाय"
+        ]
+        is_basic_greeting = (q_low in greetings) or (words and words[0] in greetings and len(words) <= 5)
+        if is_basic_greeting:
             if is_hi:
                 return (
                     "👋 **नमस्ते! आज मैं आपकी क्या सहायता कर सकता हूँ?**\n\n"
-                    "मैं प्रहरी एआई (PRAHARI AI) हूँ। आप मुझसे भारतीय मानक (IS Codes), बीआईएस योजनाएं, औद्योगिक सुरक्षा या सामान्य प्रश्न पूछ सकते हैं।"
+                    "मैं **प्रहरी एआई (PRAHARI AI)** हूँ — भारतीय मानक (IS कोड), बीआईएस योजनाओं और औद्योगिक सुरक्षा के लिए आपका समर्पित सहायक।\n\n"
+                    "आप मुझसे निम्नलिखित विषयों पर पूछ सकते हैं:\n"
+                    "• 🏷️ **भारतीय मानक (IS Codes)**: विनिर्देश, प्रयोगशाला परीक्षण और गुणवत्ता नियंत्रण आदेश (QCO)।\n"
+                    "• 📜 **बीआईएस लाइसेंस प्रक्रिया**: ISI मार्क (स्कीम-I) और CRS पंजीकरण (स्कीम-II)।\n"
+                    "• 🛡️ **उपभोक्ता सुरक्षा**: असली ISI मार्क (7-अंकीय CML) और स्वर्ण हॉलमार्क (6-अंकीय HUID) सत्यापन।\n"
+                    "• ⚙️ **औद्योगिक सुरक्षा एवं एसओपी**: रिफाइनरी सुरक्षा मानक और अनुपालन प्रक्रियाएं।\n\n"
+                    "आज आप क्या जानना या समझना चाहते हैं?"
                 )
             return (
                 "👋 **Hello! How can I help you today?**\n\n"
-                "I am your versatile AI assistant. You can ask me anything, including:\n"
-                "• ✍️ **Daily Tasks & Writing**: Drafting emails, essays, summaries, and productivity planning.\n"
-                "• 💡 **Everyday Problem Solving & Lifestyle**: Wellness advice, cooking ideas, decision-making, and study tips.\n"
-                "• 🧮 **Math, Science & General Knowledge**: Equations, world facts, physics, chemistry, and history.\n"
-                "• 💻 **Programming & Tech**: Python, JavaScript, SQL, HTML/CSS, algorithms, and debugging.\n"
-                "• 🛡️ **Industrial & Safety Intelligence**: P&ID drawings, refinery SOPs, valve specs, and maintenance logs.\n\n"
-                "What would you like to explore or solve together?"
+                "I am **PRAHARI AI**, your authoritative virtual assistant for Indian Standards (IS codes), Bureau of Indian Standards (BIS) Schemes, and Industrial Operational Safety.\n\n"
+                "You can ask me anything about:\n"
+                "• 🏷️ **Indian Standards (IS Codes)**: Technical specifications, lab testing, and mandatory Quality Control Orders (QCO).\n"
+                "• 📜 **BIS Certification Guidance**: Step-by-step procedures for ISI Mark (Scheme-I) and CRS (Scheme-II).\n"
+                "• 🛡️ **Consumer Protection**: How to verify genuine ISI marks (7-digit CML), Gold Hallmark (6-digit HUID), and file complaints.\n"
+                "• ⚙️ **Industrial Safety & Operations**: Standard Operating Procedures (SOPs), equipment integrity, and safety protocols.\n\n"
+                "What would you like to explore today?"
             )
 
         if "how are you" in q_low:
