@@ -1,4 +1,4 @@
-# 🛡️ PRAHARI AI (v3.0.0 — SIH Topic 26107 Edition)
+# 🛡️ PRAHARI AI (v3.1.0 — Dual-Engine Edition)
 
 [![Release](https://img.shields.io/github/v/release/sourishnandy4-cell/Prahari-AI?color=blue&label=Latest%20Release)](https://github.com/sourishnandy4-cell/Prahari-AI/releases/latest)
 [![Platform: Web | Windows | Android](https://img.shields.io/badge/Platform-Web%20%7C%20Windows%20%7C%20Android-brightgreen)](https://github.com/sourishnandy4-cell/Prahari-AI/releases/latest)
@@ -9,7 +9,17 @@
 
 ---
 
-## 🌟 What's New in v3.0.0 (SIH Topic 26107)
+## 🌟 What's New in v3.1.0 (Dual-Engine: Online Cloud AI + Offline Neural)
+
+1. **⚡ Google Gemini Cloud AI**: Seamless integration with **Gemini 1.5 Flash** and **Gemini 1.5 Pro**, powered directly by user-provided free Google AI Studio tokens.
+2. **🔗 1-Click Free Token Fetcher & Instant Paste**: Direct link to open Google AI Studio (`https://aistudio.google.com/app/apikey`), 1-click clipboard paste button, and instant live token testing against Google Cloud.
+3. **🌐 Real-Time Web Augmentation**: Real-time DuckDuckGo web search retrieving current BIS Quality Control Orders (QCOs), Gazette circulars, and consumer advisories without API keys.
+4. **🔒 100% Offline Air-Gapped Mode**: Local Ollama neural engine (`llama3.2:1b` + `nomic-embed-text`) with ChromaDB dense vectorstore. Works completely offline with automatic silent failover when disconnected.
+5. **🎛️ Interactive Model Switcher**: Header badge and model switcher modal for toggling between Gemini 1.5 Flash, Gemini 1.5 Pro, LLaMA 3.2 + Web, and Offline LLaMA 3.2.
+
+---
+
+## 🌟 Core Features (SIH Topic 26107)
 
 1. **🏛️ Standards Document Ingestion**: Ingests Indian Standards (IS Codes) and BIS Scheme regulatory documents into a searchable hybrid knowledge base (ChromaDB + BM25 Okapi).
 2. **📌 Retrieval with Verified Citations**: Every single answer names the exact Standard number (e.g., `IS 1786:2008`, `IS 10500:2012`, `IS 1417:2016`, `IS 269:2015`) and the specific Clause it originated from.

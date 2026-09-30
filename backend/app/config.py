@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     # App Details
     APP_NAME: str = "PRAHARI AI - Industrial Safety Copilot"
     PROJECT_NAME: str = "PRAHARI AI - Industrial Safety Copilot"
-    VERSION: str = "2.7.4"
+    VERSION: str = "3.1.0"
 
     # Ollama Local LLM & Embeddings
     OLLAMA_BASE_URL: str = "http://localhost:11434"

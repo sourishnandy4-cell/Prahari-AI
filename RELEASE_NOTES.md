@@ -1,3 +1,32 @@
+## 🛡️ PRAHARI AI v3.1.0 — Dual-Engine (Google Gemini Cloud AI + Sovereign Offline LLaMA 3.2)
+
+**Official SIH 26107 Edition with Real-Time Web Intelligence & User-Token Powered Cloud AI**
+
+### 🌟 What's New in v3.1.0:
+
+1. **⚡ Google Gemini Cloud AI Integration**:
+   - Support for **Google Gemini 1.5 Flash** (sub-second cloud intelligence, 1M context window) and **Google Gemini 1.5 Pro** (deep multi-standard reasoning).
+   - Powered directly by the user's free Google AI Studio token.
+
+2. **🔗 1-Click Free Token Retrieval & Clipboard Paste**:
+   - Direct 1-click button to open Google AI Studio (`https://aistudio.google.com/app/apikey`) for free key generation (15 RPM / 1,500 requests/day, no credit card needed).
+   - Integrated `2. Paste Key` button reading clipboard automatically with `navigator.clipboard.readText()`.
+   - `3. Test Key` button offering instant live validation with Google's API endpoint.
+
+3. **🌐 Dynamic Online Web Augmentation**:
+   - Integrated live DuckDuckGo web search retrieving real-time BIS Quality Control Orders (QCOs), Gazette circulars, and consumer advisories.
+   - 0% canned responses — 100% dynamic neural AI generation.
+
+4. **🔒 Verified 100% Offline Air-Gapped Mode**:
+   - Powered by local Ollama engine with `llama3.2` and `nomic-embed-text` dense vector embeddings in ChromaDB.
+   - Automatic silent failover: if internet connection drops or token quota is exhausted, PRAHARI AI seamlessly switches to local offline neural processing without errors or interruption.
+
+5. **🎛️ Interactive Model Switcher & Header Badge**:
+   - Header badge displaying the active engine (`[ ⚡ Gemini Flash ▼ ]`, `[ 🌐 LLaMA + Web ▼ ]`, or `[ 🔒 Offline LLaMA ▼ ]`).
+   - Settings modal allowing on-the-fly model switching, configuration persistence in `data/ai_config.json`, and live connectivity indicators.
+
+---
+
 ## 🛡️ PRAHARI AI v3.0.0 — SIH Topic 26107 Release
 
 **AI Virtual Assistant for Indian Standards (IS Codes), BIS Schemes & Industrial Safety**

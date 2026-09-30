@@ -1,7 +1,7 @@
 {
   "name": "prahari-ai",
   "private": true,
-  "version": "3.0.0",
+  "version": "3.1.0",
   "type": "module",
   "description": "PRAHARI AI — Sovereign Virtual Assistant for Indian Standards (IS Codes), BIS Schemes & Industrial Safety (SIH 26107)",
   "author": "Aegis AI Team",
