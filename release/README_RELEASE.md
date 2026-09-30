@@ -1,25 +1,24 @@
-# 🛡️ PRAHARI AI (v2.7.0 Release Distribution)
+# 🛡️ PRAHARI AI (v3.0.0 Release Distribution)
 
-Sovereign On-Premise Industrial Safety & Agentic RAG Web/Mobile/Desktop Suite
-Engineered for High-Reliability Operations at Mangalore Refinery and Petrochemicals Limited (MRPL).
+**Sovereign Virtual Assistant for Indian Standards (IS Codes), BIS Schemes & Industrial Safety**  
+*Built for Smart India Hackathon (SIH Topic 26107) & High-Reliability Operations at MRPL.*
 
 ---
 
-## 📦 Release Artifacts
+## 📦 Release Artifacts (v3.0.0)
 
 ### 🖥️ Windows Desktop
-1. **`PRAHARI-AI-Setup-v2.7.0.exe`**
-   - Full Windows NSIS Installer with auto-process termination hooks (`customInit` and `customInstall`).
-   - Instant Air-Gapped Startup: fast `/api/ping` polling with zero hang time.
-   - Fail-Safe WebGL 3D graphics with graceful hardware fallbacks.
-   - Seamless installation over previous running versions without manual closing.
-   - Bundles the compiled standalone backend executable (`aegis_backend.exe`).
-   - Creates Desktop & Start Menu shortcuts.
-   - Auto-starts the background FastAPI engine silently on boot.
+1. **`PRAHARI-AI-Setup-v3.0.0.exe`** (179.1 MB)
+   - Full Windows NSIS Installer with auto-update hooks.
+   - Dual-mode portal: **🏭 Industry** (Standard finder, SIT parameters, QCOs) & **👥 Consumer** (ISI CML, Gold Hallmark HUID, Complaints).
+   - Native Bilingual UI: One-click English / हिन्दी switch with automatic Devanagari script detection.
+   - Integrated offline ChromaDB vectorstore + Okapi BM25 hybrid retrieval engine.
+   - Voice input recognition via Web Speech API (`en-IN` / `hi-IN`).
+   - Creates Desktop & Start Menu shortcuts with silent background startup.
 
-2. **`PRAHARI-AI-Portable-v2.7.0.exe`**
-   - Zero-install portable edition.
-   - Simply double-click to run on any Windows 10/11 64-bit machine.
+2. **`PRAHARI-AI-Portable-v3.0.0.exe`** (178.6 MB)
+   - Zero-installation portable edition.
+   - Simply double-click to launch immediately on any Windows 10/11 64-bit PC.
 
 ---
 
